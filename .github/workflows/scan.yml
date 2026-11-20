@@ -3,7 +3,12 @@ name: Scan fares from YUL
 on:
   schedule:
     - cron: "17 */4 * * *"   # every 4 hours
-  workflow_dispatch: {}       # adds a "Run workflow" button
+  workflow_dispatch:           # adds a "Run workflow" button
+    inputs:
+      test_alert:
+        description: "Only send a test message to Telegram/email"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -38,7 +43,9 @@ jobs:
           ERROR_THRESHOLD: ${{ vars.ERROR_THRESHOLD || '0.55' }}
           ALERT_LANGUAGE: ${{ vars.ALERT_LANGUAGE || 'en' }}
         run: |
-          if [ -z "$TRAVELPAYOUTS_TOKEN" ]; then
+          if [ "${{ inputs.test_alert }}" = "true" ]; then
+            python radar.py --test-alert
+          elif [ -z "$TRAVELPAYOUTS_TOKEN" ]; then
             echo "No TRAVELPAYOUTS_TOKEN secret yet, so this run uses sample data."
             python radar.py --sample
           else
