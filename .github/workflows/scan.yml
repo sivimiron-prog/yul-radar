@@ -52,6 +52,7 @@ jobs:
             python radar.py
           fi
       - name: Save price history
+        if: ${{ inputs.test_alert != true }}
         run: |
           git config user.name "yul-radar"
           git config user.email "yul-radar@users.noreply.github.com"
@@ -59,10 +60,13 @@ jobs:
           git diff --cached --quiet || git commit -m "Scan $(date -u +%F_%H%M)"
           git push
       - name: Prepare phone page
+        if: ${{ inputs.test_alert != true }}
         uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
+        if: ${{ inputs.test_alert != true }}
         with:
           path: site
       - name: Publish phone page
+        if: ${{ inputs.test_alert != true }}
         id: deploy
         uses: actions/deploy-pages@v4
