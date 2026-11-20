@@ -345,9 +345,11 @@ def build_site(c, scanned, n_dest, sample, now):
     latest = {}
     for ts, dest, month, data in c.execute("SELECT ts, dest, month, data FROM finds WHERE ts>=? ORDER BY ts", (since,)):
         d = json.loads(data); d["found"] = ts; d["in_latest"] = ts == now
-        prev = latest.get((dest, month))
-        if prev: d["found"] = prev["found"] if prev["price"] == d["price"] else ts
-        latest[(dest, month)] = d
+        prev = latest.get(dest)
+        if prev and prev["in_latest"] and not d["in_latest"]:
+            continue
+        if prev and prev["price"] == d["price"] and prev["depart"] == d["depart"]: d["found"] = prev["found"]
+        latest[dest] = d
     finds = sorted(latest.values(), key=lambda d: (not d["in_latest"], d["verdict"] != "likely_error", -d["drop_pct"]))
     dests = {d["dest"] for d in finds}
     since30 = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
@@ -411,6 +413,8 @@ def run(sample=False):
     c.commit()
 
     candidates.sort(key=lambda x: -x[0])
+    seen = set()   # keep only the best fare per destination
+    candidates = [x for x in candidates if not (x[1]["dest"] in seen or seen.add(x[1]["dest"]))]
     log(f"{len(fares)} fares, {len(by_dest)} destinations, {len(candidates)} below the {DEAL_DROP*100:.0f}% threshold")
 
     found, checks = [], 0
