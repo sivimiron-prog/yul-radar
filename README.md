@@ -1,6 +1,6 @@
 # YUL Error Fare Radar: setup guide
 
-The Radar scans round-trip fares from Montréal to every destination several times a day. It learns what each route normally costs, flags fares far below normal, has Claude judge whether each one is an error fare, a sale or a false alarm, and sends you an alert on Telegram or by email. It also keeps a phone-friendly page of the latest finds that you can add to your home screen like an app.
+The Radar scans fares from Montréal several times a day: round trips, one-way flights leaving Montréal, and one-way flights back to Montréal from anywhere. It learns what each route normally costs, flags fares far below normal, has Claude judge whether each one is an error fare, a sale or a false alarm, and sends you an alert on Telegram or by email. It also keeps a phone-friendly page of the latest finds that you can add to your home screen like an app.
 
 ## What you need
 
@@ -120,4 +120,5 @@ Telegram alerts still arrive as notifications, and the page is where you go to l
 - Travelpayouts fares come from searches made by Aviasales users in the last 48 hours, so some are already gone by the time you see them. The Google Flights check and the booking links let you confirm quickly.
 - Detection improves over time. After about 2 weeks of scans, each route has a solid price history.
 - Airlines sometimes cancel error fares. After booking, wait a few days before paying for anything non-refundable.
-- The scan only covers economy round trips. Business-class errors would need another data source.
+- The scan covers economy fares only. Business-class errors would need another data source.
+- On the phone page, switch between **Round trip**, **From Montréal** and **Back to Montréal**, and tap **Europe** to see only European cities.
