@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>YUL Radar</title>
+<meta name="theme-color" content="#1f4fd1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="YUL Radar">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: phone-first feed. Sticky status bar, filter row, one column of fare cards; two columns on wide screens. */
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --ink:#14202e; --muted:#5b6878; --line:#d9dfe7;
+  --accent:#1f4fd1; --accent-soft:#e3eafc; --on-accent:#ffffff;
+  --err:#c8173a; --err-soft:#fbe4e9; --deal:#b35c00; --deal-soft:#fdf0de; --ok:#1d7a4f; --warn:#b35c00;
+  --display:"Familjen Grotesk","Helvetica Neue",Arial,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0e141c; --surface:#16202b; --ink:#e6ecf3; --muted:#93a1b2; --line:#2a3644;
+  --accent:#7ea2ff; --accent-soft:#1d2a47; --on-accent:#0e141c;
+  --err:#ff6b86; --err-soft:#3a1822; --deal:#f0a54a; --deal-soft:#36260f; --ok:#5fd19b; --warn:#f0a54a; color-scheme:dark}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;
+  padding-bottom:env(safe-area-inset-bottom,0px)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--surface);z-index:10}
+.gut{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:980px;margin:0 auto}
+h1,h2,h3{font-family:var(--display);margin:0;letter-spacing:-.01em;text-wrap:balance}
+.num{font-variant-numeric:tabular-nums}
+.label{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:600}
+
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.bar .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:12px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand svg{flex:none}
+.brand h1{font-size:20px;font-weight:700}
+.brand small{display:block;font-size:12px;color:var(--muted);font-family:var(--mono)}
+.fresh{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);text-align:right}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);flex:none}
+.dot.stale{background:var(--warn)}
+
+main{display:flex;flex-direction:column;gap:16px;padding-block:16px 40px}
+.sample{font-size:13px;font-weight:600;color:var(--deal);background:var(--deal-soft);padding:8px 12px;border-radius:6px}
+.summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.summary>div{padding:10px 12px;border-left:1px solid var(--line);min-width:0;display:flex;flex-direction:column;justify-content:space-between;gap:2px}
+.summary>div:first-child{border-left:0}
+.summary .label{font-size:10px;letter-spacing:.07em}
+.summary .v{font-family:var(--display);font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15}
+.summary .v.err{color:var(--err)} .summary .v.deal{color:var(--deal)}
+
+.filters{display:flex;flex-direction:column;gap:10px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:3px}
+.seg button{font:inherit;font-size:14px;font-weight:500;border:0;background:transparent;color:var(--muted);padding:8px 6px;border-radius:6px;cursor:pointer;min-height:40px}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);font-weight:600}
+.searchbox{font:inherit;font-size:16px;width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);min-height:44px}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.list{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:760px){.list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
+.card .stripe{height:4px}
+.card.err .stripe{background:var(--err)} .card.deal .stripe{background:var(--deal)}
+.card.old{opacity:.78}
+.cbody{padding:12px 14px 14px;display:flex;flex-direction:column;gap:10px}
+.top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.top>div{min-width:0}
+.route{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.city{font-family:var(--display);font-size:22px;font-weight:700;line-height:1.15;overflow-wrap:anywhere}
+.price{text-align:right;flex:none}
+.price .p{font-family:var(--display);font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.price .was{font-size:13px;color:var(--muted);text-decoration:line-through;font-variant-numeric:tabular-nums}
+.tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pill{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:4px}
+.pill.err{background:var(--err-soft);color:var(--err)} .pill.deal{background:var(--deal-soft);color:var(--deal)}
+.pct{font-weight:700;font-size:14px;font-variant-numeric:tabular-nums}
+.pct.err{color:var(--err)} .pct.deal{color:var(--deal)}
+.seen{font-size:12px;color:var(--muted)}
+.facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;font-size:14px;border-top:1px solid var(--line);padding-top:10px}
+.facts div{display:flex;flex-direction:column;gap:1px;min-width:0}
+.reason{font-size:14px;background:var(--accent-soft);border-radius:6px;padding:8px 10px}
+.reason b{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:2px}
+.spark{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted)}
+.spark svg{flex:1;min-width:0;height:34px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{font:inherit;font-size:14px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;
+  padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;min-height:44px;flex:1 1 auto}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.empty{padding:28px 16px;text-align:center;color:var(--muted);background:var(--surface);border:1px dashed var(--line);border-radius:10px}
+.section-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.section-h h2{font-size:18px}
+footer{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:6px;max-width:70ch}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);
+  padding:10px 16px;border-radius:8px;font-size:14px;font-weight:500;z-index:20}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="bar gut">
+  <div class="wrap">
+    <div class="brand">
+      <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="var(--accent)"/><circle cx="16" cy="16" r="10" fill="none" stroke="var(--on-accent)" stroke-opacity=".45" stroke-width="1.5"/><circle cx="16" cy="16" r="5" fill="none" stroke="var(--on-accent)" stroke-opacity=".45" stroke-width="1.5"/><path d="M16 16 L26 9" stroke="var(--on-accent)" stroke-width="2" stroke-linecap="round"/><circle cx="22" cy="12" r="2.2" fill="var(--on-accent)"/></svg>
+      <div><h1>YUL Radar</h1><small id="origin">Montréal–Trudeau</small></div>
+    </div>
+    <div class="fresh"><span class="dot" id="dot"></span><span id="fresh"></span></div>
+  </div>
+</header>
+
+<main class="wrap gut">
+  <div class="sample" id="sampleNote" hidden></div>
+  <section class="summary" aria-label="Summary">
+    <div><div class="label" id="lErr"></div><div class="v err" id="nErr">0</div></div>
+    <div><div class="label" id="lDeal"></div><div class="v deal" id="nDeal">0</div></div>
+    <div><div class="label" id="lScan"></div><div class="v" id="nScan">0</div></div>
+  </section>
+
+  <div class="filters">
+    <div class="seg" role="group" id="seg">
+      <button type="button" data-f="all" aria-pressed="true"></button>
+      <button type="button" data-f="likely_error" aria-pressed="false"></button>
+      <button type="button" data-f="strong_deal" aria-pressed="false"></button>
+    </div>
+    <input class="searchbox" id="q" type="search" autocomplete="off">
+  </div>
+
+  <section style="display:flex;flex-direction:column;gap:10px">
+    <div class="section-h"><h2 id="hList"></h2><span class="label" id="count"></span></div>
+    <div class="list" id="list"></div>
+  </section>
+
+  <footer id="foot"></footer>
+</main>
+<div class="toast" id="toast" hidden></div>
+
+<script id="data" type="application/json">__DATA__</script>
+<script>
+(function(){
+const D=JSON.parse(document.getElementById("data").textContent);
+const FR=D.lang==="fr";
+const T=FR?{
+  errors:"Erreurs probables",deals:"Aubaines",scanned:"Destinations",all:"Tout",err1:"Erreur probable",deal1:"Aubaine",
+  search:"Chercher une ville (ex. Lisbonne)",list:"Trouvailles des 7 derniers jours",shown:n=>n+" affichée"+(n>1?"s":""),
+  dates:"Dates",trip:"Durée",airline:"Compagnie",days:n=>n+" jours",stops:n=>n===0?"Direct":n+" escale"+(n>1?"s":""),
+  why:"Analyse",normal:"normal",seen:"Trouvé",latest:"Dans le dernier scan",older:"Peut être expiré",
+  copy:"Copier l'alerte",copied:"Alerte copiée",copyFail:"Copie impossible",google:"Vérifier sur Google Flights",avia:"Aviasales",
+  low:"Plus bas prix vu",empty:"Rien sous votre seuil pour l'instant. Le Radar vérifie toutes les 4 heures.",
+  noMatch:"Aucun résultat pour cette recherche.",ago:(m)=>m<60?`il y a ${m} min`:m<1440?`il y a ${Math.round(m/60)} h`:`il y a ${Math.round(m/1440)} j`,
+  last:"Dernier scan",sample:"Données d'exemple. Ces tarifs sont simulés.",
+  foot:(d,e)=>`Aubaine à ${d}% ou plus sous le prix normal, erreur probable à ${e}% ou plus. Les tarifs viennent de recherches récentes et peuvent avoir disparu : vérifiez avant de réserver. Après une réservation sur un prix erroné, attendez quelques jours avant de payer quoi que ce soit de non remboursable.`
+}:{
+  errors:"Likely errors",deals:"Deals",scanned:"Destinations",all:"All",err1:"Likely error",deal1:"Deal",
+  search:"Search a city (e.g. Lisbon)",list:"Finds from the last 7 days",shown:n=>n+" shown",
+  dates:"Dates",trip:"Trip",airline:"Airline",days:n=>n+" days",stops:n=>n===0?"Direct":n+" stop"+(n>1?"s":""),
+  why:"Why it's cheap",normal:"normal",seen:"Found",latest:"In latest scan",older:"May have expired",
+  copy:"Copy alert",copied:"Alert copied",copyFail:"Couldn't copy",google:"Check on Google Flights",avia:"Aviasales",
+  low:"Lowest seen",empty:"Nothing below your threshold right now. The Radar checks every 4 hours.",
+  noMatch:"No finds match this search.",ago:(m)=>m<60?`${m} min ago`:m<1440?`${Math.round(m/60)} h ago`:`${Math.round(m/1440)} d ago`,
+  last:"Last scan",sample:"Sample data. These fares are simulated.",
+  foot:(d,e)=>`Deal at ${d}% or more below normal, likely error at ${e}% or more. Fares come from recent searches and may already be gone, so check before booking. After booking an error fare, wait a few days before paying for anything non-refundable.`
+};
+document.documentElement.lang=FR?"fr":"en";
+const $=id=>document.getElementById(id);
+const money=n=>FR?Math.round(n).toLocaleString("fr-CA")+" $":"$"+Math.round(n).toLocaleString("en-CA");
+const fmtDate=s=>new Date(s+"T12:00:00").toLocaleDateString(FR?"fr-CA":"en-CA",{month:"short",day:"numeric"});
+const minsAgo=iso=>Math.max(0,Math.round((Date.now()-new Date(iso))/60000));
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+$("origin").textContent=D.origin+" · Montréal–Trudeau";
+$("lErr").textContent=T.errors;$("lDeal").textContent=T.deals;$("lScan").textContent=T.scanned;
+$("q").placeholder=T.search;$("hList").textContent=T.list;
+const segB=[...$("seg").children];segB[0].textContent=T.all;segB[1].textContent=T.errors;segB[2].textContent=T.deals;
+$("foot").innerHTML=`<span>${esc(T.foot(D.deal_pct,D.error_pct))}</span>`;
+if(D.sample){$("sampleNote").hidden=false;$("sampleNote").textContent=T.sample}
+
+function freshness(){const m=minsAgo(D.generated);$("fresh").textContent=T.last+" · "+T.ago(m);$("dot").classList.toggle("stale",m>8*60)}
+freshness();setInterval(freshness,60000);
+
+const finds=D.finds;
+$("nErr").textContent=finds.filter(f=>f.verdict==="likely_error").length;
+$("nDeal").textContent=finds.filter(f=>f.verdict==="strong_deal").length;
+$("nScan").textContent=D.destinations;
+
+function spark(dest,price){
+  const h=(D.history[dest]||[]).map(p=>p[1]);if(h.length<3)return "";
+  const W=200,H=34,mx=Math.max(...h,price),mn=Math.min(...h,price),sp=(mx-mn)||1;
+  const x=i=>2+i*(W-4)/(h.length-1),y=v=>mx===mn?H/2:3+(mx-v)*(H-6)/sp;
+  const pts=h.map((v,i)=>x(i).toFixed(1)+","+y(v).toFixed(1)).join(" ");
+  return `<div class="spark"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+   <polygon points="2,${H} ${pts} ${W-2},${H}" fill="var(--accent-soft)"/><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+   <circle cx="${x(h.length-1)}" cy="${y(h[h.length-1])}" r="2.5" fill="var(--accent)"/></svg><span>${T.low}<br><b class="num" style="color:var(--ink)">${money(Math.min(...h))}</b></span></div>`;
+}
+
+let filter="all",query="";
+try{const s=localStorage.getItem("yulradar.filter");if(s)filter=s}catch(e){}
+
+function render(){
+  segB.forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.f===filter)));
+  const q=query.trim().toLowerCase();
+  const shown=finds.filter(f=>(filter==="all"||f.verdict===filter)&&(!q||(f.city+" "+f.dest).toLowerCase().includes(q)));
+  $("count").textContent=T.shown(shown.length);
+  if(!finds.length){$("list").innerHTML=`<div class="empty">${T.empty}</div>`;return}
+  if(!shown.length){$("list").innerHTML=`<div class="empty">${T.noMatch}</div>`;return}
+  $("list").innerHTML=shown.map((f,i)=>{
+    const k=f.verdict==="likely_error"?"err":"deal";
+    const days=Math.round((new Date(f.return)-new Date(f.depart))/864e5);
+    const old=!f.in_latest;
+    return `<article class="card ${k} ${old?"old":""}">
+     <div class="stripe"></div><div class="cbody">
+      <div class="top"><div><div class="route">${esc(D.origin)} → ${esc(f.dest)}</div><div class="city">${esc(f.city)}</div></div>
+       <div class="price"><div class="p">${money(f.price)}</div><div class="was">${money(f.normal_price)}</div></div></div>
+      <div class="tags"><span class="pill ${k}">${f.verdict==="likely_error"?T.err1:T.deal1}</span><span class="pct ${k}">−${f.drop_pct}%</span>
+       <span class="seen">· ${T.seen} ${T.ago(minsAgo(f.found))} · ${old?T.older:T.latest}</span></div>
+      <div class="facts"><div><span class="label">${T.dates}</span>${fmtDate(f.depart)} – ${fmtDate(f.return)}</div>
+       <div><span class="label">${T.trip}</span>${T.days(days)}</div>
+       <div><span class="label">${T.airline}</span>${esc(f.airline||"—")} · ${T.stops(f.stops)}</div></div>
+      ${f.reason?`<div class="reason"><b>${T.why}</b>${esc(f.reason)}</div>`:""}
+      ${spark(f.dest,f.price)}
+      <div class="actions"><a class="btn primary" href="${esc(f.google_link)}" target="_blank" rel="noopener">${T.google}</a>
+       ${f.link?`<a class="btn" href="${esc(f.link)}" target="_blank" rel="noopener">${T.avia}</a>`:""}
+       <button type="button" class="btn" data-copy="${i}">${T.copy}</button></div>
+     </div></article>`}).join("");
+  $("list").querySelectorAll("[data-copy]").forEach(b=>b.onclick=()=>copy(shown[+b.dataset.copy]));
+}
+function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,1800)}
+function copy(f){
+  const text=(f.alert||`${f.city} ${money(f.price)}`)+"\n"+f.google_link;
+  try{navigator.clipboard.writeText(text).then(()=>toast(T.copied),()=>toast(T.copyFail))}catch(e){toast(T.copyFail)}
+}
+segB.forEach(b=>b.onclick=()=>{filter=b.dataset.f;try{localStorage.setItem("yulradar.filter",filter)}catch(e){}render()});
+$("q").addEventListener("input",e=>{query=e.target.value;render()});
+render();
+})();
+</script>
+</body>
+</html>

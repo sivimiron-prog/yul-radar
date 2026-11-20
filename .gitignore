@@ -1,0 +1,4 @@
+.env
+data/sample.db
+site/
+__pycache__/
