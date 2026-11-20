@@ -120,8 +120,18 @@ def places():
     return _places
 
 EUROPE = set("AD AL AT BA BE BG BY CH CY CZ DE DK EE ES FI FO FR GB GI GR HR HU IE IS IT LI LT LU LV MC MD ME MK MT NL NO PL PT RO RS SE SI SK SM UA VA XK".split())
-def is_europe(code):
-    return (places().get(code) or {}).get("cc") in EUROPE
+REGIONS = {
+    "europe": EUROPE | {"TR", "GE", "AM", "AZ"},
+    "asia": set("AE AF AM AZ BD BH BN BT CN GE HK ID IL IN IQ IR JO JP KG KH KR KW KZ LA LB LK MM MN MO MV MY NP OM PH PK PS QA SA SG SY TH TJ TL TM TR TW UZ VN YE".split()),
+    "sun": set("AG AI AW BB BL BQ BS BZ CR CU CW DM DO GD GP GT HN HT JM KN KY LC MF MQ MX NI PA PR SV SX TC TT VC VG VI".split()),
+    "north": {"US", "CA", "PM", "BM"},
+    "south": set("AR BO BR CL CO EC FK GF GY PE PY SR UY VE".split()),
+    "africa": set("AO BF BI BJ BW CD CF CG CI CM CV DJ DZ EG ER ET GA GH GM GN GQ GW KE KM LR LS LY MA MG ML MR MU MW MZ NA NE NG RE RW SC SD SL SN SO SS ST SZ TD TG TN TZ UG YT ZA ZM ZW".split()),
+    "oceania": set("AU NZ FJ PF NC WS TO VU PG GU MP CK".split()),
+}
+def regions_of(code):
+    cc = (places().get(code) or {}).get("cc")
+    return [r for r, ccs in REGIONS.items() if cc in ccs]
 
 KIND_LABEL = {"rt": "round trip", "out": "one way", "back": "one way"}
 def key_of(kind, place): return place if kind == "rt" else f"{kind}:{place}"
@@ -408,7 +418,7 @@ def build_site(c, scanned, n_dest, sample, now):
     for ts, dest, month, data in c.execute("SELECT ts, dest, month, data FROM finds WHERE ts>=? ORDER BY ts", (since,)):
         d = json.loads(data); d["found"] = ts; d["in_latest"] = ts == now
         d.setdefault("kind", "rt"); d.setdefault("key", dest); d.setdefault("place", d.get("dest", dest))
-        d["europe"] = is_europe(d["place"])
+        d["regions"] = regions_of(d["place"])
         prev = latest.get(dest)
         if prev and prev["_ts"] == ts and prev["drop_pct"] >= d["drop_pct"]:
             continue   # same scan, keep the bigger drop
@@ -432,7 +442,7 @@ def build_site(c, scanned, n_dest, sample, now):
         kind, place = (key.split(":", 1) if ":" in key else ("rt", key))
         hist = [r[0] for r in c.execute("SELECT price FROM obs WHERE dest=? AND ts>=?", (key, since90))]
         p = places().get(place) or {}
-        prices.append({"key": key, "kind": kind, "dest": place, "city": city_name(place), "europe": p.get("cc") in EUROPE,
+        prices.append({"key": key, "kind": kind, "dest": place, "city": city_name(place), "regions": regions_of(place),
                        "alt": " ".join(filter(None, [p.get("name"), p.get("name_fr"), p.get("country"), p.get("country_fr")])),
                        "country": (p.get("country_fr") if LANG == "fr" else "") or p.get("country") or "",
                        "price": price, "normal": round(statistics.median(hist)) if hist else None,

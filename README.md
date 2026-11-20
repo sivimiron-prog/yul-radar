@@ -121,4 +121,4 @@ Telegram alerts still arrive as notifications, and the page is where you go to l
 - Detection improves over time. After about 2 weeks of scans, each route has a solid price history.
 - Airlines sometimes cancel error fares. After booking, wait a few days before paying for anything non-refundable.
 - The scan covers economy fares only. Business-class errors would need another data source.
-- On the phone page, switch between **Round trip**, **From Montréal** and **Back to Montréal**, and tap **Europe** to see only European cities.
+- On the phone page, switch between **Round trip**, **From Montréal** and **Back to Montréal**, and use the region picker (Everywhere, Europe, Asia, Caribbean & Mexico, and more) to narrow the list.

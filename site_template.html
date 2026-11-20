@@ -66,8 +66,11 @@ main{display:flex;flex-direction:column;gap:16px;padding-block:16px 40px}
 .seg.trip button{font-size:13px}
 .srow{display:flex;gap:8px;align-items:stretch}
 .srow .searchbox{flex:1;min-width:0}
-.chip{font:inherit;font-size:14px;font-weight:600;padding:0 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer;min-height:44px;flex:none}
-.chip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.chip{font:inherit;font-size:14px;font-weight:600;padding:0 14px;border-radius:8px;border:1px solid var(--line);background-color:var(--surface);color:var(--muted);cursor:pointer;min-height:44px;flex:none}
+.chip.on{background-color:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+select.chip{appearance:none;-webkit-appearance:none;padding-right:30px;max-width:46%;
+  background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);
+  background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px;background-repeat:no-repeat}
 .kindlbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
 .searchbox{font:inherit;font-size:16px;width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);min-height:44px}
 button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -150,7 +153,7 @@ footer{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:
       <button type="button" data-f="likely_error" aria-pressed="false"></button>
       <button type="button" data-f="strong_deal" aria-pressed="false"></button>
     </div>
-    <div class="srow"><input class="searchbox" id="q" type="search" autocomplete="off"><button type="button" class="chip" id="eu" aria-pressed="false"></button></div>
+    <div class="srow"><input class="searchbox" id="q" type="search" autocomplete="off"><select class="chip" id="region" aria-label="Region"></select></div>
   </div>
 
   <section style="display:flex;flex-direction:column;gap:10px">
@@ -180,7 +183,7 @@ const T=FR?{
   copy:"Copier l'alerte",copied:"Alerte copiée",copyFail:"Copie impossible",google:"Vérifier sur Google Flights",avia:"Aviasales",
   low:"Plus bas prix vu",empty:"Rien sous votre seuil pour l'instant. Le Radar vérifie toutes les 4 heures.",
   noMatch:"Aucun résultat pour cette recherche.",ago:(m)=>m<60?`il y a ${m} min`:m<1440?`il y a ${Math.round(m/60)} h`:`il y a ${Math.round(m/1440)} j`,
-  rt:"Aller-retour",out:"Montréal →",back:"→ Montréal",europe:"Europe",ow:"aller simple",rtl:"aller-retour",oneway:"Aller simple",
+  rt:"Aller-retour",out:"Montréal →",back:"→ Montréal",regions:{all:"Partout",europe:"Europe",asia:"Asie",sun:"Caraïbes et Mexique",north:"États-Unis et Canada",south:"Amérique du Sud",africa:"Afrique",oceania:"Océanie"},ow:"aller simple",rtl:"aller-retour",oneway:"Aller simple",
   allH:"Prix le plus bas par destination",allBack:"Retour le moins cher depuis chaque ville",tap:"Touchez une ligne pour vérifier sur Google Flights",vs:p=>p<0?`${-p} % sous la normale`:p>0?`${p} % au-dessus`:"Prix normal",
   more:n=>`Voir les ${n} destinations`,less:"Voir moins",nfound:q=>`Aucune destination « ${q} » dans le dernier scan.`,gsearch:q=>`Chercher « ${q} » sur Google Flights`,dest:n=>n+(n===1?" destination":" destinations"),
   last:"Dernier scan",sample:"Données d'exemple. Ces tarifs sont simulés.",
@@ -193,7 +196,7 @@ const T=FR?{
   copy:"Copy alert",copied:"Alert copied",copyFail:"Couldn't copy",google:"Check on Google Flights",avia:"Aviasales",
   low:"Lowest seen",empty:"Nothing below your threshold right now. The Radar checks every 4 hours.",
   noMatch:"No finds match this search.",ago:(m)=>m<60?`${m} min ago`:m<1440?`${Math.round(m/60)} h ago`:`${Math.round(m/1440)} d ago`,
-  rt:"Round trip",out:"From Montréal",back:"Back to Montréal",europe:"Europe",ow:"one way",rtl:"round trip",oneway:"One way",
+  rt:"Round trip",out:"From Montréal",back:"Back to Montréal",regions:{all:"Everywhere",europe:"Europe",asia:"Asia",sun:"Caribbean & Mexico",north:"USA & Canada",south:"South America",africa:"Africa",oceania:"Oceania"},ow:"one way",rtl:"round trip",oneway:"One way",
   allH:"Cheapest fare to every destination",allBack:"Cheapest flight back from every city",tap:"Tap a row to check it on Google Flights",vs:p=>p<0?`${-p}% below normal`:p>0?`${p}% above normal`:"Normal price",
   more:n=>`Show all ${n} destinations`,less:"Show fewer",nfound:q=>`No “${q}” in the latest scan.`,gsearch:q=>`Search “${q}” on Google Flights`,dest:n=>n+(n===1?" destination":" destinations"),
   last:"Last scan",sample:"Sample data. These fares are simulated.",
@@ -208,7 +211,7 @@ const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",
 
 $("origin").textContent=D.origin+" · Montréal–Trudeau";
 $("lErr").textContent=T.errors;$("lDeal").textContent=T.deals;$("lScan").textContent=T.scanned;
-$("q").placeholder=T.search;$("eu").textContent=T.europe;
+$("q").placeholder=T.search;$("region").innerHTML=Object.entries(T.regions).map(([k,v])=>`<option value="${k}">${v}</option>`).join("");
 const tripB=[...$("trip").children];tripB[0].textContent=T.rt;tripB[1].textContent=T.out;tripB[2].textContent=T.back;$("hList").textContent=T.list;$("hAll").textContent=T.allH;
 const segB=[...$("seg").children];segB[0].textContent=T.all;segB[1].textContent=T.errors;segB[2].textContent=T.deals;
 $("foot").innerHTML=`<span>${esc(T.foot(D.deal_pct,D.error_pct))}</span>`;
@@ -230,19 +233,21 @@ function spark(dest,price){
    <circle cx="${x(h.length-1)}" cy="${y(h[h.length-1])}" r="2.5" fill="var(--accent)"/></svg><span>${T.low}<br><b class="num" style="color:var(--ink)">${money(Math.min(...h))}</b></span></div>`;
 }
 
-let filter="all",query="",showAll=false,kind="rt",eu=false;
-try{kind=localStorage.getItem("yulradar.kind")||"rt";eu=localStorage.getItem("yulradar.eu")==="1"}catch(e){}
+let filter="all",query="",showAll=false,kind="rt",region="all";
+try{kind=localStorage.getItem("yulradar.kind")||"rt";region=localStorage.getItem("yulradar.region")||"all"}catch(e){}
+if(!T.regions[region])region="all";
+const inRegion=o=>region==="all"||(o.regions||[]).includes(region);
 const routeOf=(k,code)=>k==="back"?`${code} → ${D.origin}`:k==="out"?`${D.origin} → ${code}`:`${D.origin} ⇄ ${code}`;
 const datesOf=o=>o.return?`${fmtDate(o.depart)} – ${fmtDate(o.return)}`:fmtDate(o.depart);
 const norm=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
 const prices=D.prices||[];
 function renderPrices(){
   const q=norm(query.trim());
-  const match=prices.filter(p=>p.kind===kind&&(!eu||p.europe)&&(!q||norm(p.city+" "+p.dest+" "+p.alt).includes(q)));
+  const match=prices.filter(p=>p.kind===kind&&inRegion(p)&&(!q||norm(p.city+" "+p.dest+" "+p.alt).includes(q)));
   $("hAll").textContent=kind==="back"?T.allBack:T.allH;$("countAll").textContent=T.dest(match.length);
   const el=$("plist");
   if(!match.length){
-    const qq=query.trim()||T.europe;
+    const qq=query.trim()||T.regions[region];
     const g="https://www.google.com/travel/flights?q="+encodeURIComponent(kind==="back"?`One way flights from ${qq} to ${D.origin}`:kind==="out"?`One way flights from ${D.origin} to ${qq}`:`Flights from ${D.origin} to ${qq}`);
     el.innerHTML=`<div class="empty">${esc(T.nfound(qq))}<br><br><a class="btn primary" href="${esc(g)}" target="_blank" rel="noopener">${esc(T.gsearch(qq))}</a></div>`;return}
   const list=(q||showAll)?match:match.slice(0,12);
@@ -262,12 +267,12 @@ function render(){
   segB.forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.f===filter)));
   renderPrices();
   const q=norm(query.trim());
-  tripB.forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.k===kind)));$("eu").setAttribute("aria-pressed",String(eu));
+  tripB.forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.k===kind)));$("region").value=region;$("region").classList.toggle("on",region!=="all");
   const alt=Object.fromEntries(prices.map(p=>[p.dest,p.alt]));
-  const mine=finds.filter(f=>(f.kind||"rt")===kind&&(!eu||f.europe));
+  const mine=finds.filter(f=>(f.kind||"rt")===kind&&inRegion(f));
   $("nErr").textContent=mine.filter(f=>f.verdict==="likely_error").length;
   $("nDeal").textContent=mine.filter(f=>f.verdict==="strong_deal").length;
-  $("nScan").textContent=prices.filter(p=>p.kind===kind).length;
+  $("nScan").textContent=prices.filter(p=>p.kind===kind&&inRegion(p)).length;
   const shown=mine.filter(f=>(filter==="all"||f.verdict===filter)&&(!q||norm(f.city+" "+f.dest+" "+(alt[f.dest]||"")).includes(q)));
   $("count").textContent=T.shown(shown.length);
   if(!mine.length){$("list").innerHTML=`<div class="empty">${T.empty}</div>`;return}
@@ -301,7 +306,7 @@ function copy(f){
 segB.forEach(b=>b.onclick=()=>{filter=b.dataset.f;try{localStorage.setItem("yulradar.filter",filter)}catch(e){}render()});
 $("q").addEventListener("input",e=>{query=e.target.value;render()});
 tripB.forEach(b=>b.onclick=()=>{kind=b.dataset.k;showAll=false;try{localStorage.setItem("yulradar.kind",kind)}catch(e){}render()});
-$("eu").onclick=()=>{eu=!eu;try{localStorage.setItem("yulradar.eu",eu?"1":"0")}catch(e){}render()};
+$("region").onchange=e=>{region=e.target.value;showAll=false;try{localStorage.setItem("yulradar.region",region)}catch(e){}render()};
 render();
 })();
 </script>
