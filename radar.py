@@ -346,8 +346,9 @@ def build_site(c, scanned, n_dest, sample, now):
     for ts, dest, month, data in c.execute("SELECT ts, dest, month, data FROM finds WHERE ts>=? ORDER BY ts", (since,)):
         d = json.loads(data); d["found"] = ts; d["in_latest"] = ts == now
         prev = latest.get(dest)
-        if prev and prev["in_latest"] and not d["in_latest"]:
-            continue
+        if prev and prev["_ts"] == ts and prev["drop_pct"] >= d["drop_pct"]:
+            continue   # same scan, keep the bigger drop
+        d["_ts"] = ts
         if prev and prev["price"] == d["price"] and prev["depart"] == d["depart"]: d["found"] = prev["found"]
         latest[dest] = d
     finds = sorted(latest.values(), key=lambda d: (not d["in_latest"], d["verdict"] != "likely_error", -d["drop_pct"]))
