@@ -93,21 +93,33 @@ FALLBACK_CITIES = {
  "MRS":"Marseille","NCE":"Nice","TLS":"Toulouse","LYS":"Lyon","BOD":"Bordeaux","ALG":"Algiers",
  "TUN":"Tunis","DPS":"Bali","HKT":"Phuket","SGN":"Ho Chi Minh City","HAN":"Hanoi","MNL":"Manila",
 }
-_city_cache = None
-def city_name(code):
-    global _city_cache
-    if _city_cache is None:
-        _city_cache = dict(FALLBACK_CITIES)
-        cache = HERE / "data" / "cities.json"
+_places = None
+def places():
+    """{code: {name, name_fr, country, country_fr}} from Travelpayouts' public data files, cached on disk."""
+    global _places
+    if _places is None:
+        _places = {k: {"name": v} for k, v in FALLBACK_CITIES.items()}
+        cache = HERE / "data" / "places.json"
         try:
             if not cache.exists() and TP_TOKEN:
-                cities = http_json("https://api.travelpayouts.com/data/en/cities.json")
-                cache.write_text(json.dumps({c["code"]: c.get("name") or c["code"] for c in cities}), encoding="utf-8")
+                get = lambda p: http_json("https://api.travelpayouts.com/data/" + p)
+                cen, cfr = get("en/cities.json"), get("fr/cities.json")
+                nen = {c["code"]: c.get("name") for c in get("en/countries.json")}
+                nfr = {c["code"]: c.get("name") for c in get("fr/countries.json")}
+                fr = {c["code"]: c.get("name") for c in cfr}
+                out = {c["code"]: {"name": c.get("name") or c["code"], "name_fr": fr.get(c["code"]) or "",
+                                   "country": nen.get(c.get("country_code")) or "", "country_fr": nfr.get(c.get("country_code")) or ""}
+                       for c in cen}
+                cache.write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
             if cache.exists():
-                _city_cache.update(json.loads(cache.read_text(encoding="utf-8")))
+                _places.update(json.loads(cache.read_text(encoding="utf-8")))
         except Exception as e:
             log("City names unavailable, using codes:", e)
-    return _city_cache.get(code, code)
+    return _places
+
+def city_name(code):
+    p = places().get(code) or {}
+    return (p.get("name_fr") if LANG == "fr" else "") or p.get("name") or code
 
 # ---------------------------------------------------------------- fare sources
 def months_to_scan():
@@ -358,7 +370,18 @@ def build_site(c, scanned, n_dest, sample, now):
     for dest in dests:
         rows = c.execute("SELECT ts, MIN(price) FROM obs WHERE dest=? AND ts>=? GROUP BY ts ORDER BY ts", (dest, since30)).fetchall()
         history[dest] = [[t, p] for t, p in rows][-40:]
-    data = {"generated": now, "sample": sample, "origin": ORIGIN, "lang": LANG, "currency": CURRENCY.upper(),
+    prices = []
+    since90 = (datetime.now(timezone.utc) - timedelta(days=90)).isoformat()
+    for dest, price, depart, ret, airline, stops in c.execute(
+            "SELECT dest, MIN(price), depart, ret, airline, stops FROM obs WHERE ts=? GROUP BY dest ORDER BY MIN(price)", (now,)):
+        hist = [r[0] for r in c.execute("SELECT price FROM obs WHERE dest=? AND ts>=?", (dest, since90))]
+        p = places().get(dest) or {}
+        prices.append({"dest": dest, "city": city_name(dest), "alt": " ".join(filter(None, [p.get("name"), p.get("name_fr"), p.get("country"), p.get("country_fr")])),
+                       "country": (p.get("country_fr") if LANG == "fr" else "") or p.get("country") or "",
+                       "price": price, "normal": round(statistics.median(hist)) if hist else None,
+                       "depart": depart, "return": ret, "airline": airline, "stops": stops,
+                       "google_link": google_link({"dest_airport": dest, "depart": depart, "ret": ret})})
+    data = {"generated": now, "prices": prices, "sample": sample, "origin": ORIGIN, "lang": LANG, "currency": CURRENCY.upper(),
             "deal_pct": round(DEAL_DROP * 100), "error_pct": round(ERROR_DROP * 100),
             "fares": scanned, "destinations": n_dest, "finds": finds, "history": history}
     tpl = (HERE / "site_template.html").read_text(encoding="utf-8")

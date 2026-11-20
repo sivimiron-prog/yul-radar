@@ -96,6 +96,15 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
 .btn{font:inherit;font-size:14px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;
   padding:10px 14px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;min-height:44px;flex:1 1 auto}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.plist{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.prow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:11px 14px;border-top:1px solid var(--line);text-decoration:none;color:var(--ink);min-height:56px}
+.prow:first-child{border-top:0}
+.prow .pc{font-weight:600;overflow-wrap:anywhere}
+.prow .pm{font-size:13px;color:var(--muted)}
+.prow .pp{font-family:var(--display);font-size:19px;font-weight:700;text-align:right;font-variant-numeric:tabular-nums}
+.prow .pv{font-size:12px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.prow .pv.lo{color:var(--ok);font-weight:600}
+.more{font:inherit;font-size:14px;font-weight:600;width:100%;padding:12px;border:0;border-top:1px solid var(--line);background:var(--surface);color:var(--accent);cursor:pointer;min-height:44px}
 .empty{padding:28px 16px;text-align:center;color:var(--muted);background:var(--surface);border:1px dashed var(--line);border-radius:10px}
 .section-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .section-h h2{font-size:18px}
@@ -138,6 +147,11 @@ footer{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:
     <div class="list" id="list"></div>
   </section>
 
+  <section style="display:flex;flex-direction:column;gap:10px">
+    <div class="section-h"><h2 id="hAll"></h2><span class="label" id="countAll"></span></div>
+    <div id="plist"></div>
+  </section>
+
   <footer id="foot"></footer>
 </main>
 <div class="toast" id="toast" hidden></div>
@@ -149,22 +163,26 @@ const D=JSON.parse(document.getElementById("data").textContent);
 const FR=D.lang==="fr";
 const T=FR?{
   errors:"Erreurs probables",deals:"Aubaines",scanned:"Destinations",all:"Tout",err1:"Erreur probable",deal1:"Aubaine",
-  search:"Chercher une ville (ex. Lisbonne)",list:"Trouvailles des 7 derniers jours",shown:n=>n+" affichée"+(n>1?"s":""),
+  search:"Ville ou pays (ex. Roumanie)",list:"Trouvailles des 7 derniers jours",shown:n=>n+" affichée"+(n>1?"s":""),
   dates:"Dates",trip:"Durée",airline:"Compagnie",days:n=>n+" jours",stops:n=>n===0?"Direct":n+" escale"+(n>1?"s":""),
   why:"Analyse",normal:"normal",seen:"Trouvé",latest:"Dans le dernier scan",older:"Peut être expiré",
   copy:"Copier l'alerte",copied:"Alerte copiée",copyFail:"Copie impossible",google:"Vérifier sur Google Flights",avia:"Aviasales",
   low:"Plus bas prix vu",empty:"Rien sous votre seuil pour l'instant. Le Radar vérifie toutes les 4 heures.",
   noMatch:"Aucun résultat pour cette recherche.",ago:(m)=>m<60?`il y a ${m} min`:m<1440?`il y a ${Math.round(m/60)} h`:`il y a ${Math.round(m/1440)} j`,
+  allH:"Prix le plus bas par destination",tap:"Touchez une ligne pour vérifier sur Google Flights",vs:p=>p<0?`${-p} % sous la normale`:p>0?`${p} % au-dessus`:"Prix normal",
+  more:n=>`Voir les ${n} destinations`,less:"Voir moins",nfound:q=>`Aucune destination « ${q} » dans le dernier scan.`,gsearch:q=>`Chercher « ${q} » sur Google Flights`,dest:n=>n+(n===1?" destination":" destinations"),
   last:"Dernier scan",sample:"Données d'exemple. Ces tarifs sont simulés.",
   foot:(d,e)=>`Aubaine à ${d}% ou plus sous le prix normal, erreur probable à ${e}% ou plus. Les tarifs viennent de recherches récentes et peuvent avoir disparu : vérifiez avant de réserver. Après une réservation sur un prix erroné, attendez quelques jours avant de payer quoi que ce soit de non remboursable.`
 }:{
   errors:"Likely errors",deals:"Deals",scanned:"Destinations",all:"All",err1:"Likely error",deal1:"Deal",
-  search:"Search a city (e.g. Lisbon)",list:"Finds from the last 7 days",shown:n=>n+" shown",
+  search:"Search a city or country (e.g. Romania)",list:"Finds from the last 7 days",shown:n=>n+" shown",
   dates:"Dates",trip:"Trip",airline:"Airline",days:n=>n+" days",stops:n=>n===0?"Direct":n+" stop"+(n>1?"s":""),
   why:"Why it's cheap",normal:"normal",seen:"Found",latest:"In latest scan",older:"May have expired",
   copy:"Copy alert",copied:"Alert copied",copyFail:"Couldn't copy",google:"Check on Google Flights",avia:"Aviasales",
   low:"Lowest seen",empty:"Nothing below your threshold right now. The Radar checks every 4 hours.",
   noMatch:"No finds match this search.",ago:(m)=>m<60?`${m} min ago`:m<1440?`${Math.round(m/60)} h ago`:`${Math.round(m/1440)} d ago`,
+  allH:"Cheapest fare to every destination",tap:"Tap a row to check it on Google Flights",vs:p=>p<0?`${-p}% below normal`:p>0?`${p}% above normal`:"Normal price",
+  more:n=>`Show all ${n} destinations`,less:"Show fewer",nfound:q=>`No “${q}” in the latest scan.`,gsearch:q=>`Search “${q}” on Google Flights`,dest:n=>n+(n===1?" destination":" destinations"),
   last:"Last scan",sample:"Sample data. These fares are simulated.",
   foot:(d,e)=>`Deal at ${d}% or more below normal, likely error at ${e}% or more. Fares come from recent searches and may already be gone, so check before booking. After booking an error fare, wait a few days before paying for anything non-refundable.`
 };
@@ -177,7 +195,7 @@ const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",
 
 $("origin").textContent=D.origin+" · Montréal–Trudeau";
 $("lErr").textContent=T.errors;$("lDeal").textContent=T.deals;$("lScan").textContent=T.scanned;
-$("q").placeholder=T.search;$("hList").textContent=T.list;
+$("q").placeholder=T.search;$("hList").textContent=T.list;$("hAll").textContent=T.allH;
 const segB=[...$("seg").children];segB[0].textContent=T.all;segB[1].textContent=T.errors;segB[2].textContent=T.deals;
 $("foot").innerHTML=`<span>${esc(T.foot(D.deal_pct,D.error_pct))}</span>`;
 if(D.sample){$("sampleNote").hidden=false;$("sampleNote").textContent=T.sample}
@@ -200,13 +218,36 @@ function spark(dest,price){
    <circle cx="${x(h.length-1)}" cy="${y(h[h.length-1])}" r="2.5" fill="var(--accent)"/></svg><span>${T.low}<br><b class="num" style="color:var(--ink)">${money(Math.min(...h))}</b></span></div>`;
 }
 
-let filter="all",query="";
+let filter="all",query="",showAll=false;
+const norm=s=>String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+const prices=D.prices||[];
+function renderPrices(){
+  const q=norm(query.trim());
+  const match=prices.filter(p=>!q||norm(p.city+" "+p.dest+" "+p.alt).includes(q));
+  $("countAll").textContent=T.dest(match.length);
+  const el=$("plist");
+  if(!match.length){
+    const g="https://www.google.com/travel/flights?q="+encodeURIComponent("Flights from "+D.origin+" to "+query.trim());
+    el.innerHTML=`<div class="empty">${esc(T.nfound(query.trim()))}<br><br><a class="btn primary" href="${esc(g)}" target="_blank" rel="noopener">${esc(T.gsearch(query.trim()))}</a></div>`;return}
+  const list=(q||showAll)?match:match.slice(0,12);
+  el.innerHTML=`<div class="plist">${list.map(p=>{
+    const pct=p.normal?Math.round((p.price/p.normal-1)*100):0;
+    return `<a class="prow" href="${esc(p.google_link)}" target="_blank" rel="noopener">
+      <span class="pc">${esc(p.city)}</span><span class="pp">${money(p.price)}</span>
+      <span class="pm">${esc(p.country)}${p.country?" · ":""}${fmtDate(p.depart)} – ${fmtDate(p.return)} · ${T.stops(p.stops)}</span>
+      <span class="pv ${pct<=-15?"lo":""}">${T.vs(pct)}</span></a>`}).join("")}
+   ${!q&&match.length>12?`<button type="button" class="more" id="moreBtn">${showAll?T.less:T.more(match.length)}</button>`:""}</div>
+   <div class="label" style="text-transform:none;letter-spacing:0;font-weight:400;margin-top:6px">${T.tap}</div>`;
+  const mb=$("moreBtn");if(mb)mb.onclick=()=>{showAll=!showAll;renderPrices()};
+}
 try{const s=localStorage.getItem("yulradar.filter");if(s)filter=s}catch(e){}
 
 function render(){
   segB.forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.f===filter)));
-  const q=query.trim().toLowerCase();
-  const shown=finds.filter(f=>(filter==="all"||f.verdict===filter)&&(!q||(f.city+" "+f.dest).toLowerCase().includes(q)));
+  renderPrices();
+  const q=norm(query.trim());
+  const alt=Object.fromEntries(prices.map(p=>[p.dest,p.alt]));
+  const shown=finds.filter(f=>(filter==="all"||f.verdict===filter)&&(!q||norm(f.city+" "+f.dest+" "+(alt[f.dest]||"")).includes(q)));
   $("count").textContent=T.shown(shown.length);
   if(!finds.length){$("list").innerHTML=`<div class="empty">${T.empty}</div>`;return}
   if(!shown.length){$("list").innerHTML=`<div class="empty">${T.noMatch}</div>`;return}
