@@ -489,7 +489,20 @@ def build_site(c, scanned, n_dest, sample, now):
                        "depart": depart, "return": ret, "airline": airline, "stops": stops,
                        "google_link": google_link({"kind": kind, "airport": place, "depart": depart, "ret": ret})})
     prices.sort(key=lambda x: x["price"])
-    data = {"generated": now, "prices": prices, "repo": env("GITHUB_REPOSITORY"), "sample": sample, "origin": ORIGIN, "lang": LANG, "currency": CURRENCY.upper(),
+    # one-way fares with dates, for the trip combos view: up to 2 per city per month, 10 per city
+    oneways = []
+    per = {}
+    for key, price, depart, airline, stops in c.execute(
+            "SELECT dest, price, depart, airline, stops FROM obs WHERE ts=? AND (dest LIKE 'out:%' OR dest LIKE 'back:%') ORDER BY price", (now,)):
+        kind, place = key.split(":", 1)
+        n_city = per.setdefault(key, {})
+        month = depart[:7]
+        if sum(n_city.values()) >= 10 or n_city.get(month, 0) >= 2 or any(o["k"] == kind and o["c"] == place and o["d"] == depart for o in oneways[-12:]):
+            continue
+        n_city[month] = n_city.get(month, 0) + 1
+        oneways.append({"k": kind, "c": place, "n": city_name(place), "d": depart, "p": price, "s": stops,
+                        "a": airline, "r": regions_of(place)})
+    data = {"generated": now, "prices": prices, "oneways": oneways, "repo": env("GITHUB_REPOSITORY"), "sample": sample, "origin": ORIGIN, "lang": LANG, "currency": CURRENCY.upper(),
             "deal_pct": round(DEAL_DROP * 100), "error_pct": round(ERROR_DROP * 100),
             "fares": scanned, "destinations": n_dest, "finds": finds, "history": history}
     tpl = (HERE / "site_template.html").read_text(encoding="utf-8")

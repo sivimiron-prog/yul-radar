@@ -106,6 +106,8 @@ The Radar icon then opens the page full screen, like an app. It shows the finds 
 
 **Scan now button.** At the top of the page, **Scan now** starts a fresh scan from your phone. It takes about 3 minutes, then the page updates by itself. The first time, open **One-tap scanning** and follow the 4 steps to make a key that can only start the scan. The key is stored on that phone only. With the key saved, the page also starts a scan by itself when you open it and the last scan is more than 3 hours old. Without a key, the button opens GitHub, where you tap **Run workflow**.
 
+**Trip combos.** The **Trip combos** view pairs a one-way flight out of Montréal with a one-way flight back, from the same or a different city, and ranks the pairs by total price. Pick how long you'll be away (1–2 weeks up to 2–4 months) and a region such as Europe or Asia. These are two separate tickets, so if the first flight is late, the second one isn't protected.
+
 Telegram alerts still arrive as notifications, and the page is where you go to look at all the finds together.
 
 ## How detection works

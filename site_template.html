@@ -30,6 +30,7 @@
   --accent:#7ea2ff; --accent-soft:#1d2a47; --on-accent:#0e141c;
   --err:#ff6b86; --err-soft:#3a1822; --deal:#f0a54a; --deal-soft:#36260f; --ok:#5fd19b; --warn:#f0a54a; color-scheme:dark}}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;
   padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -63,7 +64,20 @@ main{display:flex;flex-direction:column;gap:16px;padding-block:16px 40px}
 .seg{display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:3px}
 .seg button{font:inherit;font-size:14px;font-weight:500;border:0;background:transparent;color:var(--muted);padding:8px 6px;border-radius:6px;cursor:pointer;min-height:40px}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);font-weight:600}
-.seg.trip button{font-size:13px}
+.seg.trip{grid-template-columns:repeat(4,1fr)}
+.seg.trip button{font-size:13px;line-height:1.2}
+@media(max-width:520px){.seg.trip{grid-template-columns:repeat(2,1fr)}}
+.combo{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;padding:12px 14px;border-top:1px solid var(--line)}
+.combo:first-child{border-top:0}
+.leg{display:flex;justify-content:space-between;gap:10px;font-size:14px;grid-column:1;min-width:0}
+.leg a{color:var(--ink);text-decoration:none;font-weight:600;overflow-wrap:anywhere}
+.leg a::after{content:" ↗";color:var(--accent);font-weight:400}
+.leg span{color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.ctot{grid-column:2;grid-row:1/span 3;text-align:right;align-self:center}
+.ctot .p{font-family:var(--display);font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.ctot small{display:block;font-size:12px;color:var(--muted)}
+.cstay{grid-column:1;font-size:12px;color:var(--muted)}
+.lenrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px;color:var(--muted)}
 .srow{display:flex;gap:8px;align-items:stretch}
 .srow .searchbox{flex:1;min-width:0}
 .chip{font:inherit;font-size:14px;font-weight:600;padding:0 14px;border-radius:8px;border:1px solid var(--line);background-color:var(--surface);color:var(--muted);cursor:pointer;min-height:44px;flex:none}
@@ -153,7 +167,7 @@ footer{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:
     <details class="setup" id="setup"><summary id="setupSum"></summary><div id="setupBody"></div></details>
   </section>
 
-  <section class="summary" aria-label="Summary">
+  <section class="summary" id="summary" aria-label="Summary">
     <div><div class="label" id="lErr"></div><div class="v err" id="nErr">0</div></div>
     <div><div class="label" id="lDeal"></div><div class="v deal" id="nDeal">0</div></div>
     <div><div class="label" id="lScan"></div><div class="v" id="nScan">0</div></div>
@@ -164,6 +178,7 @@ footer{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:
       <button type="button" data-k="rt" aria-pressed="true"></button>
       <button type="button" data-k="out" aria-pressed="false"></button>
       <button type="button" data-k="back" aria-pressed="false"></button>
+      <button type="button" data-k="combo" aria-pressed="false"></button>
     </div>
     <div class="seg" role="group" id="seg">
       <button type="button" data-f="all" aria-pressed="true"></button>
@@ -173,12 +188,19 @@ footer{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:
     <div class="srow"><input class="searchbox" id="q" type="search" autocomplete="off"><select class="chip" id="region" aria-label="Region"></select></div>
   </div>
 
-  <section style="display:flex;flex-direction:column;gap:10px">
+  <section id="comboSec" style="display:flex;flex-direction:column;gap:10px" hidden>
+    <div class="section-h"><h2 id="hCombo"></h2><span class="label" id="countCombo"></span></div>
+    <div class="lenrow"><label for="stay" id="lStay"></label><select class="chip" id="stay"></select></div>
+    <div id="clist"></div>
+    <div class="label" style="text-transform:none;letter-spacing:0;font-weight:400" id="comboNote"></div>
+  </section>
+
+  <section id="findSec" style="display:flex;flex-direction:column;gap:10px">
     <div class="section-h"><h2 id="hList"></h2><span class="label" id="count"></span></div>
     <div class="list" id="list"></div>
   </section>
 
-  <section style="display:flex;flex-direction:column;gap:10px">
+  <section id="allSec" style="display:flex;flex-direction:column;gap:10px">
     <div class="section-h"><h2 id="hAll"></h2><span class="label" id="countAll"></span></div>
     <div id="plist"></div>
   </section>
@@ -209,6 +231,10 @@ const T=FR?{
   mk:"Créer la clé",paste:"Collez la clé ici",save:"Enregistrer",remove:"Retirer la clé",saved:"Clé enregistrée",removed:"Clé retirée",
   keyNote:"La clé reste sur ce téléphone seulement. Elle permet uniquement de lancer le scan du Radar.",
   inOther:(c,v)=>`${c} n'apparaît pas dans cette vue, mais il y a un prix en « ${v} ».`,showIt:v=>`Voir en « ${v} »`,
+  moreC:n=>`Voir ${n} combinés`,combo:"Combinés",comboH:"Meilleurs combinés aller simple",stayL:"Durée du séjour",total:"total",
+  stays:{"7-14":"1 à 2 semaines","14-28":"2 à 4 semaines","28-60":"1 à 2 mois","60-120":"2 à 4 mois"},
+  days2:n=>`${n} jours sur place`,combos:n=>n+" combinés",noCombo:"Aucun combiné pour ces choix. Essayez une autre durée ou région.",
+  comboNote:"Deux billets séparés : si le premier vol est retardé, le second n'est pas protégé. Touchez une ville pour vérifier chaque vol sur Google Flights.",
   allH:"Prix le plus bas par destination",allBack:"Retour le moins cher depuis chaque ville",tap:"Touchez une ligne pour vérifier sur Google Flights",vs:p=>p<0?`${-p} % sous la normale`:p>0?`${p} % au-dessus`:"Prix normal",
   more:n=>`Voir les ${n} destinations`,less:"Voir moins",nfound:q=>`Aucune destination « ${q} » dans le dernier scan.`,gsearch:q=>`Chercher « ${q} » sur Google Flights`,dest:n=>n+(n===1?" destination":" destinations"),
   last:"Dernier scan",sample:"Données d'exemple. Ces tarifs sont simulés.",
@@ -230,6 +256,10 @@ const T=FR?{
   mk:"Create key",paste:"Paste the key here",save:"Save",remove:"Remove key",saved:"Key saved",removed:"Key removed",
   keyNote:"The key stays on this phone only. All it can do is start the Radar's scan.",
   inOther:(c,v)=>`${c} isn't in this view, but there's a fare under “${v}”.`,showIt:v=>`Show it in “${v}”`,
+  moreC:n=>`Show ${n} combos`,combo:"Trip combos",comboH:"Best one-way combos",stayL:"Time away",total:"total",
+  stays:{"7-14":"1–2 weeks","14-28":"2–4 weeks","28-60":"1–2 months","60-120":"2–4 months"},
+  days2:n=>`${n} days away`,combos:n=>n+" combos",noCombo:"No combos for these choices. Try another length or region.",
+  comboNote:"Two separate tickets: if the first flight is late, the second one isn't protected. Tap a city to check each flight on Google Flights.",
   allH:"Cheapest fare to every destination",allBack:"Cheapest flight back from every city",tap:"Tap a row to check it on Google Flights",vs:p=>p<0?`${-p}% below normal`:p>0?`${p}% above normal`:"Normal price",
   more:n=>`Show all ${n} destinations`,less:"Show fewer",nfound:q=>`No “${q}” in the latest scan.`,gsearch:q=>`Search “${q}” on Google Flights`,dest:n=>n+(n===1?" destination":" destinations"),
   last:"Last scan",sample:"Sample data. These fares are simulated.",
@@ -245,7 +275,9 @@ const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",
 $("origin").textContent=D.origin+" · Montréal–Trudeau";
 $("lErr").textContent=T.errors;$("lDeal").textContent=T.deals;$("lScan").textContent=T.scanned;
 $("q").placeholder=T.search;$("region").innerHTML=Object.entries(T.regions).map(([k,v])=>`<option value="${k}">${v}</option>`).join("");
-const tripB=[...$("trip").children];tripB[0].textContent=T.rt;tripB[1].textContent=T.out;tripB[2].textContent=T.back;$("hList").textContent=T.list;$("hAll").textContent=T.allH;
+const tripB=[...$("trip").children];tripB[0].textContent=T.rt;tripB[1].textContent=T.out;tripB[2].textContent=T.back;tripB[3].textContent=T.combo;
+$("hCombo").textContent=T.comboH;$("lStay").textContent=T.stayL;$("comboNote").textContent=T.comboNote;
+$("stay").innerHTML=Object.entries(T.stays).map(([k,v])=>`<option value="${k}">${v}</option>`).join("");$("hList").textContent=T.list;$("hAll").textContent=T.allH;
 const segB=[...$("seg").children];segB[0].textContent=T.all;segB[1].textContent=T.errors;segB[2].textContent=T.deals;
 $("foot").innerHTML=`<span>${esc(T.foot(D.deal_pct,D.error_pct))}</span>`;
 if(D.sample){$("sampleNote").hidden=false;$("sampleNote").textContent=T.sample}
@@ -269,6 +301,7 @@ function spark(dest,price){
 let filter="all",query="",showAll=false,kind="rt",region="all";
 try{kind=localStorage.getItem("yulradar.kind")||"rt";region=localStorage.getItem("yulradar.region")||"all"}catch(e){}
 if(!T.regions[region])region="all";
+if(!["rt","out","back","combo"].includes(kind))kind="rt";
 const inRegion=o=>region==="all"||(o.regions||[]).includes(region);
 const routeOf=(k,code)=>k==="back"?`${code} → ${D.origin}`:k==="out"?`${D.origin} → ${code}`:`${D.origin} ⇄ ${code}`;
 const datesOf=o=>o.return?`${fmtDate(o.depart)} – ${fmtDate(o.return)}`:fmtDate(o.depart);
@@ -307,7 +340,40 @@ function renderPrices(){
 }
 try{const s=localStorage.getItem("yulradar.filter");if(s)filter=s}catch(e){}
 
+let stay="14-28";try{stay=localStorage.getItem("yulradar.stay")||stay}catch(e){}
+if(!T.stays[stay])stay="14-28";
+const owLink=(k,code,d)=>"https://www.google.com/travel/flights?q="+encodeURIComponent(k==="out"?`One way flights from ${D.origin} to ${code} on ${d}`:`One way flights from ${code} to ${D.origin} on ${d}`);
+function renderCombos(){
+  $("stay").value=stay;
+  const [lo,hi]=stay.split("-").map(Number);const q=norm(query.trim());
+  const ok=o=>inRegion({regions:o.r});
+  const ow=D.oneways||[];
+  const outs=ow.filter(o=>o.k==="out"&&ok(o)),backs=ow.filter(o=>o.k==="back"&&ok(o));
+  const best={};
+  for(const o of outs){const od=new Date(o.d+"T12:00:00");
+    for(const b of backs){const days=Math.round((new Date(b.d+"T12:00:00")-od)/864e5);
+      if(days<lo||days>hi)continue;
+      if(q&&!norm(o.n+" "+o.c+" "+b.n+" "+b.c).includes(q))continue;
+      const key=o.c+">"+b.c,tot=o.p+b.p;
+      if(!best[key]||tot<best[key].tot)best[key]={o,b,tot,days}}}
+  const list=Object.values(best).sort((x,y)=>x.tot-y.tot).slice(0,showAll?60:15);
+  const n=Object.keys(best).length;$("countCombo").textContent=T.combos(n);
+  if(!list.length){$("clist").innerHTML=`<div class="empty">${T.noCombo}</div>`;return}
+  $("clist").innerHTML=`<div class="plist">${list.map(x=>`<div class="combo">
+     <div class="leg"><a href="${esc(owLink("out",x.o.c,x.o.d))}" target="_blank" rel="noopener">Montréal → ${esc(x.o.n)}</a><span>${fmtDate(x.o.d)} · ${money(x.o.p)}</span></div>
+     <div class="leg"><a href="${esc(owLink("back",x.b.c,x.b.d))}" target="_blank" rel="noopener">${esc(x.b.n)} → Montréal</a><span>${fmtDate(x.b.d)} · ${money(x.b.p)}</span></div>
+     <div class="cstay">${T.days2(x.days)} · ${T.stops(x.o.s)} / ${T.stops(x.b.s)}</div>
+     <div class="ctot"><div class="p">${money(x.tot)}</div><small>${T.total}</small></div></div>`).join("")}
+   ${n>15?`<button type="button" class="more" id="moreCombo">${showAll?T.less:T.moreC(Math.min(n,60))}</button>`:""}</div>`;
+  const mc=$("moreCombo");if(mc)mc.onclick=()=>{showAll=!showAll;renderCombos()};
+}
+$("stay").onchange=e=>{stay=e.target.value;try{localStorage.setItem("yulradar.stay",stay)}catch(err){}renderCombos()};
+
 function render(){
+  const isCombo=kind==="combo";
+  $("comboSec").hidden=!isCombo;$("findSec").hidden=isCombo;$("allSec").hidden=isCombo;$("seg").hidden=isCombo;$("summary").hidden=isCombo;
+  tripB.forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.k===kind)));$("region").value=region;$("region").classList.toggle("on",region!=="all");
+  if(isCombo){renderCombos();return}
   segB.forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.f===filter)));
   renderPrices();
   const q=norm(query.trim());
