@@ -208,6 +208,7 @@ const T=FR?{
   steps:["Touchez <b>Créer la clé</b>. Le formulaire GitHub s'ouvre déjà rempli.","À <b>Repository access</b>, choisissez <b>Only select repositories</b>, puis <b>yul-radar</b>.","Touchez <b>Generate token</b>, puis copiez la clé (elle commence par <code>github_pat_</code>).","Collez-la ici et touchez <b>Enregistrer</b>."],
   mk:"Créer la clé",paste:"Collez la clé ici",save:"Enregistrer",remove:"Retirer la clé",saved:"Clé enregistrée",removed:"Clé retirée",
   keyNote:"La clé reste sur ce téléphone seulement. Elle permet uniquement de lancer le scan du Radar.",
+  inOther:(c,v)=>`${c} n'apparaît pas dans cette vue, mais il y a un prix en « ${v} ».`,showIt:v=>`Voir en « ${v} »`,
   allH:"Prix le plus bas par destination",allBack:"Retour le moins cher depuis chaque ville",tap:"Touchez une ligne pour vérifier sur Google Flights",vs:p=>p<0?`${-p} % sous la normale`:p>0?`${p} % au-dessus`:"Prix normal",
   more:n=>`Voir les ${n} destinations`,less:"Voir moins",nfound:q=>`Aucune destination « ${q} » dans le dernier scan.`,gsearch:q=>`Chercher « ${q} » sur Google Flights`,dest:n=>n+(n===1?" destination":" destinations"),
   last:"Dernier scan",sample:"Données d'exemple. Ces tarifs sont simulés.",
@@ -228,6 +229,7 @@ const T=FR?{
   steps:["Tap <b>Create key</b>. GitHub's form opens already filled in.","Under <b>Repository access</b>, choose <b>Only select repositories</b>, then <b>yul-radar</b>.","Tap <b>Generate token</b>, then copy the key (it starts with <code>github_pat_</code>).","Paste it here and tap <b>Save</b>."],
   mk:"Create key",paste:"Paste the key here",save:"Save",remove:"Remove key",saved:"Key saved",removed:"Key removed",
   keyNote:"The key stays on this phone only. All it can do is start the Radar's scan.",
+  inOther:(c,v)=>`${c} isn't in this view, but there's a fare under “${v}”.`,showIt:v=>`Show it in “${v}”`,
   allH:"Cheapest fare to every destination",allBack:"Cheapest flight back from every city",tap:"Tap a row to check it on Google Flights",vs:p=>p<0?`${-p}% below normal`:p>0?`${p}% above normal`:"Normal price",
   more:n=>`Show all ${n} destinations`,less:"Show fewer",nfound:q=>`No “${q}” in the latest scan.`,gsearch:q=>`Search “${q}” on Google Flights`,dest:n=>n+(n===1?" destination":" destinations"),
   last:"Last scan",sample:"Sample data. These fares are simulated.",
@@ -277,6 +279,17 @@ function renderPrices(){
   const match=prices.filter(p=>p.kind===kind&&inRegion(p)&&(!q||norm(p.city+" "+p.dest+" "+p.alt).includes(q)));
   $("hAll").textContent=kind==="back"?T.allBack:T.allH;$("countAll").textContent=T.dest(match.length);
   const el=$("plist");
+  if(!match.length&&q){
+    // the place may exist under another trip type or region: offer a shortcut
+    const elsewhere=prices.filter(p=>norm(p.city+" "+p.dest+" "+p.alt).includes(q));
+    const views=[...new Set(elsewhere.map(p=>p.kind))];
+    if(elsewhere.length){
+      const k0=views.includes(kind)?kind:views[0];
+      const ex=elsewhere.find(p=>p.kind===k0);
+      el.innerHTML=`<div class="empty">${esc(T.inOther(ex.city,T[k0]))}<br><br><button type="button" class="btn primary" id="goOther">${esc(T.showIt(T[k0]))}</button></div>`;
+      $("goOther").onclick=()=>{kind=k0;region="all";store.set("yulradar.kind",kind);store.set("yulradar.region",region);render()};
+      return}
+  }
   if(!match.length){
     const qq=query.trim()||T.regions[region];
     const g="https://www.google.com/travel/flights?q="+encodeURIComponent(kind==="back"?`One way flights from ${qq} to ${D.origin}`:kind==="out"?`One way flights from ${D.origin} to ${qq}`:`Flights from ${D.origin} to ${qq}`);
