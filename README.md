@@ -117,6 +117,10 @@ Telegram alerts still arrive as notifications, and the page is where you go to l
 5. **AI review:** Claude looks at the drop, the season, the routing and the live check, then gives a verdict and writes the alert.
 6. **Alert:** you get the alert with a Google Flights link. The same destination and month won't alert again for 3 days unless the price drops another 5% or more.
 
+## Watch list
+
+Besides the general scan, the Radar checks about 85 airports directly on every scan, in all three directions (round trip, one way from Montréal, one way back): one or two per country in Europe, the main cities of Latin America, and the big hubs in Asia. These places then show up even when few people search them. To use your own list, add a GitHub variable named `WATCH_AIRPORTS` (Settings → Secrets and variables → Actions → Variables) with codes separated by spaces, for example `LIS MVD BKK`.
+
 ## Limits to know
 
 - Travelpayouts fares come from searches made by Aviasales users in the last 48 hours, so some are already gone by the time you see them. The Google Flights check and the booking links let you confirm quickly.

@@ -42,6 +42,7 @@ jobs:
           DEAL_THRESHOLD: ${{ vars.DEAL_THRESHOLD || '0.40' }}
           ERROR_THRESHOLD: ${{ vars.ERROR_THRESHOLD || '0.55' }}
           ALERT_LANGUAGE: ${{ vars.ALERT_LANGUAGE || 'en' }}
+          WATCH_AIRPORTS: ${{ vars.WATCH_AIRPORTS }}
         run: |
           if [ "${{ inputs.test_alert }}" = "true" ]; then
             python radar.py --test-alert

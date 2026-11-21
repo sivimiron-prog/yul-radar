@@ -206,6 +206,46 @@ def fetch_travelpayouts():
             counts.append(f"{kind} {len(got)}")
             time.sleep(0.3)
         log(f"  {m}: " + ", ".join(counts))
+    fares += fetch_watchlist()
+    return fares
+
+# Airports checked directly on every scan, so they show up even when few people search them.
+# Override with WATCH_AIRPORTS="LIS,MVD,..." in .env or a GitHub variable.
+WATCH_DEFAULT = {
+    "Europe": "LON DUB PAR BRU AMS LUX BER MUC ZRH GVA VIE ROM MIL MAD BCN LIS OPO ATH MLA LCA ZAG DBV LJU BUD PRG "
+              "BTS WAW KRK BUH CLJ SOF BEG SJJ TGD TIA SKP KIV VNO RIX TLL HEL STO OSL CPH REK IST NCE MRS BOD",
+    "Latin America": "MEX GUA SAL SAP MGA SJO PTY BOG MDE UIO LIM LPB SCL BUE MVD ASU SAO RIO",
+    "Asia": "TYO SEL BJS SHA HKG TPE BKK SGN HAN SIN KUL MNL DPS DEL BOM CMB KTM DXB DOH AMM",
+}
+def watch_airports():
+    custom = env("WATCH_AIRPORTS")
+    codes = custom.replace(",", " ").split() if custom else " ".join(WATCH_DEFAULT.values()).split()
+    return list(dict.fromkeys(c.upper() for c in codes if c.upper() != ORIGIN))
+
+def _watch_one(code):
+    """Cheapest round trip, one way out, and one way back for one airport, over all upcoming dates."""
+    out = []
+    for kind, a, b, ow in (("rt", ORIGIN, code, "false"), ("out", ORIGIN, code, "true"), ("back", code, ORIGIN, "true")):
+        q = {"origin": a, "destination": b, "one_way": ow, "currency": CURRENCY, "sorting": "price",
+             "unique": "false", "limit": "100", "page": "1"}
+        rows = _tp_get("/aviasales/v3/prices_for_dates", q)
+        if not rows:
+            lq = {"origin": a, "destination": b, "one_way": ow, "currency": CURRENCY, "period_type": "year",
+                  "sorting": "price", "limit": "100", "page": "1", "show_to_affiliates": "true", "trip_class": "0"}
+            rows = _tp_get("/aviasales/v3/get_latest_prices", lq)
+        out += [f for f in (_fare(kind, r) for r in rows) if f]
+    return out
+
+def fetch_watchlist():
+    from concurrent.futures import ThreadPoolExecutor
+    codes = watch_airports()
+    if not codes:
+        return []
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        results = list(pool.map(_watch_one, codes))
+    fares = [f for r in results for f in r]
+    hit = sum(1 for r in results if r)
+    log(f"  watch list: {len(codes)} airports checked, {hit} with fares, {len(fares)} fares")
     return fares
 
 SAMPLE_ROUTES = {"PAR":950,"LIS":900,"ROM":1050,"BCN":980,"ATH":1150,"LON":880,"DUB":850,"REK":700,
