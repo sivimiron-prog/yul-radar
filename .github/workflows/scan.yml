@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+      url: ${{ steps.deploy.outputs.page_url || steps.deploy2.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -70,4 +70,12 @@ jobs:
       - name: Publish phone page
         if: ${{ inputs.test_alert != true }}
         id: deploy
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
+      - name: Wait before retrying
+        if: ${{ inputs.test_alert != true && steps.deploy.outcome == 'failure' }}
+        run: sleep 30
+      - name: Publish phone page (retry)
+        if: ${{ inputs.test_alert != true && steps.deploy.outcome == 'failure' }}
+        id: deploy2
         uses: actions/deploy-pages@v4
