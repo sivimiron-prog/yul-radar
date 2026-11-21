@@ -449,7 +449,7 @@ def build_site(c, scanned, n_dest, sample, now):
                        "depart": depart, "return": ret, "airline": airline, "stops": stops,
                        "google_link": google_link({"kind": kind, "airport": place, "depart": depart, "ret": ret})})
     prices.sort(key=lambda x: x["price"])
-    data = {"generated": now, "prices": prices, "sample": sample, "origin": ORIGIN, "lang": LANG, "currency": CURRENCY.upper(),
+    data = {"generated": now, "prices": prices, "repo": env("GITHUB_REPOSITORY"), "sample": sample, "origin": ORIGIN, "lang": LANG, "currency": CURRENCY.upper(),
             "deal_pct": round(DEAL_DROP * 100), "error_pct": round(ERROR_DROP * 100),
             "fares": scanned, "destinations": n_dest, "finds": finds, "history": history}
     tpl = (HERE / "site_template.html").read_text(encoding="utf-8")

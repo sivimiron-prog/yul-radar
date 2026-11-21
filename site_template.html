@@ -114,6 +114,18 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
 .prow .pv{font-size:12px;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
 .prow .pv.lo{color:var(--ok);font-weight:600}
 .more{font:inherit;font-size:14px;font-weight:600;width:100%;padding:12px;border:0;border-top:1px solid var(--line);background:var(--surface);color:var(--accent);cursor:pointer;min-height:44px}
+.scan{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.scanrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.scanrow .btn{flex:0 0 auto;min-width:140px}
+.scanmsg{font-size:14px;color:var(--muted);flex:1 1 160px;min-width:0}
+.scanmsg.busy::before{content:"";display:inline-block;width:10px;height:10px;margin-right:8px;border-radius:50%;border:2px solid var(--accent);border-right-color:transparent;vertical-align:-1px;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.setup summary{cursor:pointer;font-size:14px;font-weight:600;color:var(--accent);min-height:32px;display:flex;align-items:center}
+.setup ol{margin:8px 0;padding-left:20px;font-size:14px;display:flex;flex-direction:column;gap:6px}
+.setup .keyrow{display:flex;gap:8px;flex-wrap:wrap}
+.setup .keyrow input{flex:1 1 200px;min-width:0}
+.setup small{color:var(--muted);font-size:12px}
+@media (prefers-reduced-motion:reduce){.scanmsg.busy::before{animation:none}}
 .empty{padding:28px 16px;text-align:center;color:var(--muted);background:var(--surface);border:1px dashed var(--line);border-radius:10px}
 .section-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .section-h h2{font-size:18px}
@@ -136,6 +148,11 @@ footer{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:
 
 <main class="wrap gut">
   <div class="sample" id="sampleNote" hidden></div>
+  <section class="scan" aria-label="Scan">
+    <div class="scanrow"><button type="button" class="btn primary" id="scanBtn"></button><span class="scanmsg" id="scanMsg" role="status"></span></div>
+    <details class="setup" id="setup"><summary id="setupSum"></summary><div id="setupBody"></div></details>
+  </section>
+
   <section class="summary" aria-label="Summary">
     <div><div class="label" id="lErr"></div><div class="v err" id="nErr">0</div></div>
     <div><div class="label" id="lDeal"></div><div class="v deal" id="nDeal">0</div></div>
@@ -184,6 +201,13 @@ const T=FR?{
   low:"Plus bas prix vu",empty:"Rien sous votre seuil pour l'instant. Le Radar vérifie toutes les 4 heures.",
   noMatch:"Aucun résultat pour cette recherche.",ago:(m)=>m<60?`il y a ${m} min`:m<1440?`il y a ${Math.round(m/60)} h`:`il y a ${Math.round(m/1440)} j`,
   rt:"Aller-retour",out:"Montréal →",back:"→ Montréal",regions:{all:"Partout",europe:"Europe",asia:"Asie",sun:"Caraïbes et Mexique",north:"États-Unis et Canada",south:"Amérique du Sud",africa:"Afrique",oceania:"Océanie"},ow:"aller simple",rtl:"aller-retour",oneway:"Aller simple",
+  scan:"Scanner maintenant",scanGh:"Scanner sur GitHub",setup:"Scan en un seul toucher",setupOn:"Clé enregistrée sur ce téléphone",
+  starting:"Démarrage du scan…",scanning:m=>`Scan en cours… (${m} min, environ 3 min au total)`,done:"Scan terminé. Mise à jour…",
+  failed:"Le scan n'a pas réussi. Réessayez dans quelques minutes.",badKey:"GitHub a refusé la clé. Vérifiez-la ci-dessous.",netErr:"Pas de connexion à GitHub. Vérifiez Internet.",
+  auto:"Le dernier scan date de plus de 3 h, nouveau scan lancé…",noKey:"Touchez pour ouvrir GitHub, puis « Run workflow ».",idle:"Prêt",
+  steps:["Touchez <b>Créer la clé</b>. Le formulaire GitHub s'ouvre déjà rempli.","À <b>Repository access</b>, choisissez <b>Only select repositories</b>, puis <b>yul-radar</b>.","Touchez <b>Generate token</b>, puis copiez la clé (elle commence par <code>github_pat_</code>).","Collez-la ici et touchez <b>Enregistrer</b>."],
+  mk:"Créer la clé",paste:"Collez la clé ici",save:"Enregistrer",remove:"Retirer la clé",saved:"Clé enregistrée",removed:"Clé retirée",
+  keyNote:"La clé reste sur ce téléphone seulement. Elle permet uniquement de lancer le scan du Radar.",
   allH:"Prix le plus bas par destination",allBack:"Retour le moins cher depuis chaque ville",tap:"Touchez une ligne pour vérifier sur Google Flights",vs:p=>p<0?`${-p} % sous la normale`:p>0?`${p} % au-dessus`:"Prix normal",
   more:n=>`Voir les ${n} destinations`,less:"Voir moins",nfound:q=>`Aucune destination « ${q} » dans le dernier scan.`,gsearch:q=>`Chercher « ${q} » sur Google Flights`,dest:n=>n+(n===1?" destination":" destinations"),
   last:"Dernier scan",sample:"Données d'exemple. Ces tarifs sont simulés.",
@@ -197,6 +221,13 @@ const T=FR?{
   low:"Lowest seen",empty:"Nothing below your threshold right now. The Radar checks every 4 hours.",
   noMatch:"No finds match this search.",ago:(m)=>m<60?`${m} min ago`:m<1440?`${Math.round(m/60)} h ago`:`${Math.round(m/1440)} d ago`,
   rt:"Round trip",out:"From Montréal",back:"Back to Montréal",regions:{all:"Everywhere",europe:"Europe",asia:"Asia",sun:"Caribbean & Mexico",north:"USA & Canada",south:"South America",africa:"Africa",oceania:"Oceania"},ow:"one way",rtl:"round trip",oneway:"One way",
+  scan:"Scan now",scanGh:"Scan on GitHub",setup:"One-tap scanning",setupOn:"Key saved on this phone",
+  starting:"Starting the scan…",scanning:m=>`Scanning… (${m} min, about 3 min in total)`,done:"Scan finished. Updating…",
+  failed:"The scan didn't finish. Try again in a few minutes.",badKey:"GitHub refused the key. Check it below.",netErr:"Couldn't reach GitHub. Check your internet.",
+  auto:"Last scan was over 3 h ago, so a new one has started…",noKey:"Opens GitHub. Tap “Run workflow” there.",idle:"Ready",
+  steps:["Tap <b>Create key</b>. GitHub's form opens already filled in.","Under <b>Repository access</b>, choose <b>Only select repositories</b>, then <b>yul-radar</b>.","Tap <b>Generate token</b>, then copy the key (it starts with <code>github_pat_</code>).","Paste it here and tap <b>Save</b>."],
+  mk:"Create key",paste:"Paste the key here",save:"Save",remove:"Remove key",saved:"Key saved",removed:"Key removed",
+  keyNote:"The key stays on this phone only. All it can do is start the Radar's scan.",
   allH:"Cheapest fare to every destination",allBack:"Cheapest flight back from every city",tap:"Tap a row to check it on Google Flights",vs:p=>p<0?`${-p}% below normal`:p>0?`${p}% above normal`:"Normal price",
   more:n=>`Show all ${n} destinations`,less:"Show fewer",nfound:q=>`No “${q}” in the latest scan.`,gsearch:q=>`Search “${q}” on Google Flights`,dest:n=>n+(n===1?" destination":" destinations"),
   last:"Last scan",sample:"Sample data. These fares are simulated.",
@@ -298,6 +329,54 @@ function render(){
      </div></article>`}).join("");
   $("list").querySelectorAll("[data-copy]").forEach(b=>b.onclick=()=>copy(shown[+b.dataset.copy]));
 }
+/* ---- Scan now ---- */
+const REPO=D.repo||(location.hostname.endsWith(".github.io")?location.hostname.split(".")[0]+"/"+location.pathname.split("/").filter(Boolean)[0]:"");
+const store={get:k=>{try{return localStorage.getItem(k)||""}catch(e){return ""}},set:(k,v)=>{try{v?localStorage.setItem(k,v):localStorage.removeItem(k)}catch(e){}}};
+let token=store.get("yulradar.token"),busy=false;
+const tokenURL="https://github.com/settings/personal-access-tokens/new?"+new URLSearchParams({name:"YUL Radar phone",description:"Lets the YUL Radar page start a scan",expires_in:"366",actions:"write"});
+function scanMsg(m,spin){$("scanMsg").textContent=m;$("scanMsg").classList.toggle("busy",!!spin)}
+function setupUI(){
+  $("scanBtn").textContent=token?T.scan:T.scanGh;
+  $("setupSum").textContent=token?"✓ "+T.setupOn:T.setup;
+  $("setupBody").innerHTML=token
+    ?`<div class="keyrow" style="margin-top:6px"><button type="button" class="btn" id="rmKey">${T.remove}</button></div><small>${T.keyNote}</small>`
+    :`<ol>${T.steps.map(s=>`<li>${s}</li>`).join("")}</ol>
+      <div class="keyrow"><a class="btn" href="${esc(tokenURL)}" target="_blank" rel="noopener">${T.mk}</a></div>
+      <div class="keyrow" style="margin-top:8px"><input class="searchbox" id="keyIn" type="password" autocomplete="off" placeholder="${T.paste}"><button type="button" class="btn primary" id="saveKey">${T.save}</button></div>
+      <small>${T.keyNote}</small>`;
+  if($("saveKey"))$("saveKey").onclick=()=>{const v=$("keyIn").value.trim();if(!v)return;token=v;store.set("yulradar.token",v);toast(T.saved);setupUI();scanMsg(T.idle)};
+  if($("rmKey"))$("rmKey").onclick=()=>{token="";store.set("yulradar.token","");toast(T.removed);setupUI();scanMsg(T.noKey)};
+  if(!busy)scanMsg(token?T.idle:T.noKey);
+}
+function api(path,opts){return fetch("https://api.github.com/repos/"+REPO+path,Object.assign({cache:"no-store"},opts||{},{headers:{"Accept":"application/vnd.github+json","Authorization":"Bearer "+token,"X-GitHub-Api-Version":"2022-11-28"}}))}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function startScan(auto){
+  if(busy)return;
+  if(!token||!REPO){if(REPO)window.location.href="https://github.com/"+REPO+"/actions/workflows/scan.yml";return}
+  busy=true;$("scanBtn").disabled=true;scanMsg(auto?T.auto:T.starting,true);
+  const t0=Date.now();store.set("yulradar.lastStart",String(t0));
+  try{
+    const r=await api("/actions/workflows/scan.yml/dispatches",{method:"POST",body:JSON.stringify({ref:"main"})});
+    if(r.status===401||r.status===403||r.status===404){scanMsg(T.badKey);$("setup").open=true;return}
+    if(!r.ok){scanMsg(T.failed);return}
+    for(let i=0;i<60;i++){
+      await sleep(10000);
+      scanMsg(T.scanning(Math.max(1,Math.round((Date.now()-t0)/60000))),true);
+      let run=null;
+      try{const j=await (await api("/actions/runs?event=workflow_dispatch&per_page=5")).json();
+        run=(j.workflow_runs||[]).find(x=>new Date(x.created_at).getTime()>=t0-90000)}catch(e){}
+      if(run&&run.status==="completed"){
+        if(run.conclusion==="success"){scanMsg(T.done,true);await sleep(8000);location.replace(location.pathname+"?t="+Date.now());return}
+        scanMsg(T.failed);return}
+    }
+    scanMsg(T.failed);
+  }catch(e){scanMsg(T.netErr)}
+  finally{busy=false;$("scanBtn").disabled=false}
+}
+$("scanBtn").onclick=()=>startScan(false);
+setupUI();
+if(token&&minsAgo(D.generated)>180&&Date.now()-Number(store.get("yulradar.lastStart")||0)>30*60000)startScan(true);
+
 function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,1800)}
 function copy(f){
   const text=(f.alert||`${f.city} ${money(f.price)}`)+"\n"+f.google_link;

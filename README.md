@@ -104,6 +104,8 @@ The link also appears on the **Actions** tab, next to each finished run.
 
 The Radar icon then opens the page full screen, like an app. It shows the finds from the last 7 days, with error fares first. Each card has the price, the normal price, the travel dates, the AI's explanation, a price trend, a button to check the fare on Google Flights, and a button to copy the alert to send to a friend. A green dot means the last scan was recent. An orange dot means no scan has run in the last 8 hours, so check the Actions tab.
 
+**Scan now button.** At the top of the page, **Scan now** starts a fresh scan from your phone. It takes about 3 minutes, then the page updates by itself. The first time, open **One-tap scanning** and follow the 4 steps to make a key that can only start the scan. The key is stored on that phone only. With the key saved, the page also starts a scan by itself when you open it and the last scan is more than 3 hours old. Without a key, the button opens GitHub, where you tap **Run workflow**.
+
 Telegram alerts still arrive as notifications, and the page is where you go to look at all the finds together.
 
 ## How detection works
