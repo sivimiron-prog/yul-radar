@@ -140,6 +140,28 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
 .setup .keyrow input{flex:1 1 200px;min-width:0}
 .setup small{color:var(--muted);font-size:12px}
 @media (prefers-reduced-motion:reduce){.scanmsg.busy::before{animation:none}}
+.views{grid-template-columns:repeat(2,1fr)}
+.views button{font-size:15px;font-weight:600}
+.plan{display:flex;flex-direction:column;gap:14px}
+.pform{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.pform .full{grid-column:1/-1}
+.pform label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);min-width:0}
+.pform input,.pform select{font:inherit;font-size:16px;text-transform:none;letter-spacing:0;font-weight:400;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);min-height:44px;width:100%;min-width:0}
+.pform .odrow{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) 44px minmax(0,1fr);gap:8px;align-items:end}
+.swap{font:inherit;font-size:18px;min-height:44px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--accent);cursor:pointer}
+.check{flex-direction:row!important;align-items:center;gap:10px!important;text-transform:none!important;letter-spacing:0!important;font-size:15px!important;color:var(--ink)!important;font-weight:500!important}
+.check input{width:22px;height:22px;min-height:0;accent-color:var(--accent)}
+.perr{color:var(--err);font-size:14px}
+.sites{display:flex;flex-direction:column;gap:8px}
+.site{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.site b{font-size:16px}
+.site .kind{font-size:12px;color:var(--muted)}
+.site .pl{grid-column:1;font-size:13px;color:var(--muted)}
+.site .pl.yes{color:var(--ok)}
+.site .btn{grid-column:2;grid-row:1/span 3;flex:none;min-width:96px}
+.known{background:var(--accent-soft);border-radius:10px;padding:12px 14px;font-size:14px;display:flex;flex-direction:column;gap:6px}
+.known b.h{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.note{font-size:13px;color:var(--muted);max-width:70ch}
 .empty{padding:28px 16px;text-align:center;color:var(--muted);background:var(--surface);border:1px dashed var(--line);border-radius:10px}
 .section-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .section-h h2{font-size:18px}
@@ -167,6 +189,31 @@ footer{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:
     <details class="setup" id="setup"><summary id="setupSum"></summary><div id="setupBody"></div></details>
   </section>
 
+  <div class="seg views" role="group" id="views" aria-label="View">
+    <button type="button" data-v="deals" aria-pressed="true"></button>
+    <button type="button" data-v="plan" aria-pressed="false"></button>
+  </div>
+
+  <section class="plan" id="planView" hidden>
+    <form class="pform" id="pform" novalidate>
+      <div class="odrow">
+        <label>__FROM__<input id="pFrom" list="cityList" autocomplete="off" value="Montréal (YUL)"></label>
+        <button type="button" class="swap" id="pSwap" aria-label="Swap">⇄</button>
+        <label>__TO__<input id="pTo" list="cityList" autocomplete="off"></label>
+      </div>
+      <label>__DEP__<input id="pDep" type="date"></label>
+      <label>__RET__<input id="pRet" type="date"></label>
+      <label>__ADULTS__<select id="pAd"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></label>
+      <label>__CABIN__<select id="pCab"><option value="e"></option><option value="p"></option><option value="b"></option></select></label>
+      <label class="check full"><input type="checkbox" id="pPay"><span id="pPayL"></span></label>
+      <div class="full perr" id="pErr" role="alert"></div>
+      <button type="submit" class="btn primary full" id="pGo"></button>
+    </form>
+    <datalist id="cityList"></datalist>
+    <div id="pOut"></div>
+  </section>
+
+  <div id="dealsView" style="display:flex;flex-direction:column;gap:16px">
   <section class="summary" id="summary" aria-label="Summary">
     <div><div class="label" id="lErr"></div><div class="v err" id="nErr">0</div></div>
     <div><div class="label" id="lDeal"></div><div class="v deal" id="nDeal">0</div></div>
@@ -204,6 +251,7 @@ footer{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:
     <div class="section-h"><h2 id="hAll"></h2><span class="label" id="countAll"></span></div>
     <div id="plist"></div>
   </section>
+  </div>
 
   <footer id="foot"></footer>
 </main>
@@ -235,6 +283,14 @@ const T=FR?{
   stays:{"7-14":"1 à 2 semaines","14-28":"2 à 4 semaines","28-60":"1 à 2 mois","60-120":"2 à 4 mois"},
   days2:n=>`${n} jours sur place`,combos:n=>n+" combinés",noCombo:"Aucun combiné pour ces choix. Essayez une autre durée ou région.",
   comboNote:"Deux billets séparés : si le premier vol est retardé, le second n'est pas protégé. Touchez une ville pour vérifier chaque vol sur Google Flights.",
+  vDeals:"Aubaines",vPlan:"Planifier un voyage",from:"De",to:"Vers",dep:"Départ",ret:"Retour (vide = aller simple)",adults:"Adultes",cabin:"Classe",
+  cabins:{e:"Économique",p:"Économique Premium",b:"Affaires"},payOnly:"Seulement les sites avec paiement plus tard",go:"Comparer les prix",
+  eTo:"Choisissez une destination.",eDep:"Choisissez une date de départ.",eRet:"Le retour doit être après le départ.",
+  knownH:"Ce que le Radar a vu pour cette destination",knownNone:"Le Radar n'a pas encore de prix pour cette destination. Les sites ci-dessous chercheront en direct.",
+  near:"Proche de vos dates",open:"Ouvrir",sitesH:"Comparer sur ces sites",sitesN:n=>n+" sites",
+  kSearch:"Comparateur",kAgency:"Agence en ligne",kAir:"Compagnie aérienne",noPay:"Pas de paiement plus tard pour les vols",
+  prefill:"Recherche déjà remplie",home:"Ouvre la page de réservation",
+  payNote:"Paiement plus tard : approbation de crédit requise, et les taux peuvent aller jusqu'à environ 36 % par an. Comparez toujours le coût total avec le paiement complet. Certaines options ne sont pas offertes au Québec : vérifiez à la caisse.",
   allH:"Prix le plus bas par destination",allBack:"Retour le moins cher depuis chaque ville",tap:"Touchez une ligne pour vérifier sur Google Flights",vs:p=>p<0?`${-p} % sous la normale`:p>0?`${p} % au-dessus`:"Prix normal",
   more:n=>`Voir les ${n} destinations`,less:"Voir moins",nfound:q=>`Aucune destination « ${q} » dans le dernier scan.`,gsearch:q=>`Chercher « ${q} » sur Google Flights`,dest:n=>n+(n===1?" destination":" destinations"),
   last:"Dernier scan",sample:"Données d'exemple. Ces tarifs sont simulés.",
@@ -260,6 +316,14 @@ const T=FR?{
   stays:{"7-14":"1–2 weeks","14-28":"2–4 weeks","28-60":"1–2 months","60-120":"2–4 months"},
   days2:n=>`${n} days away`,combos:n=>n+" combos",noCombo:"No combos for these choices. Try another length or region.",
   comboNote:"Two separate tickets: if the first flight is late, the second one isn't protected. Tap a city to check each flight on Google Flights.",
+  vDeals:"Deals",vPlan:"Plan a trip",from:"From",to:"To",dep:"Depart",ret:"Return (empty = one way)",adults:"Adults",cabin:"Cabin",
+  cabins:{e:"Economy",p:"Premium economy",b:"Business"},payOnly:"Only sites where you can pay later",go:"Compare prices",
+  eTo:"Choose a destination.",eDep:"Choose a departure date.",eRet:"The return has to be after the departure.",
+  knownH:"What the Radar has seen for this destination",knownNone:"The Radar has no prices for this destination yet. The sites below will search it live.",
+  near:"Near your dates",open:"Open",sitesH:"Compare on these sites",sitesN:n=>n+" sites",
+  kSearch:"Price comparison",kAgency:"Online travel agency",kAir:"Airline",noPay:"No pay-later option for flights",
+  prefill:"Search filled in",home:"Opens the booking page",
+  payNote:"Pay later: credit approval is required, and rates can reach about 36% a year. Always compare the total cost with paying in full. Some options aren't offered in Québec, so check at checkout.",
   allH:"Cheapest fare to every destination",allBack:"Cheapest flight back from every city",tap:"Tap a row to check it on Google Flights",vs:p=>p<0?`${-p}% below normal`:p>0?`${p}% above normal`:"Normal price",
   more:n=>`Show all ${n} destinations`,less:"Show fewer",nfound:q=>`No “${q}” in the latest scan.`,gsearch:q=>`Search “${q}” on Google Flights`,dest:n=>n+(n===1?" destination":" destinations"),
   last:"Last scan",sample:"Sample data. These fares are simulated.",
@@ -368,6 +432,75 @@ function renderCombos(){
   const mc=$("moreCombo");if(mc)mc.onclick=()=>{showAll=!showAll;renderCombos()};
 }
 $("stay").onchange=e=>{stay=e.target.value;try{localStorage.setItem("yulradar.stay",stay)}catch(err){}renderCombos()};
+
+/* ---- Plan a trip ---- */
+const CITIES=D.cities||{};
+const viewB=[...$("views").children];viewB[0].textContent=T.vDeals;viewB[1].textContent=T.vPlan;
+let view="deals";try{view=localStorage.getItem("yulradar.view")||"deals"}catch(e){}
+function showView(){viewB.forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===view)));$("planView").hidden=view!=="plan";$("dealsView").hidden=view!=="deals"}
+viewB.forEach(b=>b.onclick=()=>{view=b.dataset.v;store.set("yulradar.view",view);showView()});
+(function(){const f=$("pform");f.innerHTML=f.innerHTML.replace("__FROM__",T.from).replace("__TO__",T.to).replace("__DEP__",T.dep).replace("__RET__",T.ret).replace("__ADULTS__",T.adults).replace("__CABIN__",T.cabin);})();
+[...$("pCab").options].forEach(o=>o.textContent=T.cabins[o.value]);
+$("pPayL").textContent=T.payOnly;$("pGo").textContent=T.go;
+$("cityList").innerHTML=Object.entries(CITIES).sort((a,b)=>a[1].localeCompare(b[1])).map(([c,n])=>`<option value="${esc(n)} (${esc(c)})"></option>`).join("")+'<option value="Montréal (YUL)"></option>';
+const today=new Date().toISOString().slice(0,10);$("pDep").min=today;$("pRet").min=today;
+function codeOf(v){v=String(v||"").trim();const m=v.match(/\(([A-Za-z]{3})\)\s*$/);if(m)return m[1].toUpperCase();
+  if(/^[A-Za-z]{3}$/.test(v))return v.toUpperCase();const nv=norm(v);
+  const hit=Object.entries(CITIES).find(([c,n])=>norm(n)===nv)||Object.entries(CITIES).find(([c,n])=>norm(n).startsWith(nv));return hit?hit[0]:""}
+const nameOf=c=>c==="YUL"?"Montréal":(CITIES[c]||c);
+const ymd=d=>d.replace(/-/g,"");const yymmdd=d=>d.slice(2).replace(/-/g,"");const ddmm=d=>d.slice(8,10)+d.slice(5,7);
+const mdy=d=>`${d.slice(5,7)}/${d.slice(8,10)}/${d.slice(0,4)}`;
+// Pay-later facts checked Nov 2026: airlines use Flex Pay (formerly Uplift); KAYAK and FlightHub use Affirm; Expedia's Affirm covers hotels and packages, not flights.
+const SITES=[
+ {n:"Google Flights",k:"kSearch",pay:"",regions:null,url:s=>"https://www.google.com/travel/flights?q="+encodeURIComponent((s.r?`Flights from ${s.f} to ${s.t} on ${s.d} through ${s.r}`:`One way flights from ${s.f} to ${s.t} on ${s.d}`)+(s.a>1?` for ${s.a} adults`:"")+(s.c==="b"?" business class":s.c==="p"?" premium economy":""))},
+ {n:"KAYAK",k:"kSearch",pay:"Affirm (on fares booked on KAYAK)",regions:null,url:s=>`https://www.ca.kayak.com/flights/${s.f}-${s.t}/${s.d}${s.r?"/"+s.r:""}${s.c==="b"?"/business":s.c==="p"?"/premium":""}/${s.a}adults?sort=bestflight_a`},
+ {n:"Skyscanner",k:"kSearch",pay:"",regions:null,url:s=>`https://www.skyscanner.ca/transport/flights/${s.f.toLowerCase()}/${s.t.toLowerCase()}/${yymmdd(s.d)}/${s.r?yymmdd(s.r)+"/":""}?adultsv2=${s.a}&cabinclass=${s.c==="b"?"business":s.c==="p"?"premiumeconomy":"economy"}&rtn=${s.r?1:0}`},
+ {n:"momondo",k:"kSearch",pay:"",regions:null,url:s=>`https://www.momondo.ca/flight-search/${s.f}-${s.t}/${s.d}${s.r?"/"+s.r:""}${s.c==="b"?"/business":s.c==="p"?"/premium":""}/${s.a}adults?sort=price_a`},
+ {n:"Expedia",k:"kAgency",pay:"",regions:null,url:s=>`https://www.expedia.ca/Flights-Search?trip=${s.r?"roundtrip":"oneway"}&leg1=from:${s.f},to:${s.t},departure:${mdy(s.d)}TANYT${s.r?`&leg2=from:${s.t},to:${s.f},departure:${mdy(s.r)}TANYT`:""}&passengers=adults:${s.a}&options=cabinclass:${s.c==="b"?"business":s.c==="p"?"premium":"economy"}&mode=search`},
+ {n:"Aviasales",k:"kSearch",pay:"",regions:null,url:s=>`https://www.aviasales.com/search/${s.f}${ddmm(s.d)}${s.t}${s.r?ddmm(s.r):""}${s.a}`},
+ {n:"FlightHub",k:"kAgency",pay:"Affirm",regions:null,url:()=>"https://www.flighthub.com/"},
+ {n:"Alternative Airlines",k:"kAgency",pay:"Several pay-later providers (some not in Québec)",regions:null,url:()=>"https://www.alternativeairlines.com/"},
+ {n:"Air Canada",k:"kAir",pay:"Flex Pay, monthly payments",regions:null,url:()=>"https://www.aircanada.com/ca/en/aco/home.html"},
+ {n:"Air Transat",k:"kAir",pay:"Flex Pay, 6–24 months, $99–$15,000",regions:["europe","sun","north","south"],url:()=>"https://www.airtransat.com/en-CA"},
+ {n:"WestJet",k:"kAir",pay:"Flex Pay, 3–18 months",regions:["north","sun","europe"],url:()=>"https://www.westjet.com/en-ca"},
+ {n:"Porter",k:"kAir",pay:"Flex Pay (Pay Monthly)",regions:["north","sun"],url:()=>"https://www.flyporter.com/en-ca"},
+ {n:"Flair",k:"kAir",pay:"Flex Pay",regions:["north","sun"],url:()=>"https://www.flyflair.com/"},
+];
+const PREFILLED=new Set(["Google Flights","KAYAK","Skyscanner","momondo","Expedia","Aviasales"]);
+function regionsOfCode(c){const p=prices.find(x=>x.dest===c);if(p)return p.regions||[];const o=(D.oneways||[]).find(x=>x.c===c);return o?o.r||[]:null}
+function planSearch(e){
+  if(e)e.preventDefault();
+  const f=codeOf($("pFrom").value)||"YUL",t=codeOf($("pTo").value),d=$("pDep").value,r=$("pRet").value;
+  const a=+$("pAd").value,c=$("pCab").value,payOnly=$("pPay").checked;
+  $("pErr").textContent=!t?T.eTo:!d?T.eDep:(r&&r<=d)?T.eRet:"";
+  store.set("yulradar.plan",JSON.stringify({from:$("pFrom").value,to:$("pTo").value,d,r,a,c,payOnly}));
+  if($("pErr").textContent){$("pOut").innerHTML="";return}
+  const s={f,t,d,r,a,c};
+  // what the Radar knows
+  const place=f==="YUL"?t:f, dir=f==="YUL"?(r?"rt":"out"):"back";
+  const known=[];
+  const rt=prices.find(p=>p.dest===place&&p.kind==="rt"),ou=prices.find(p=>p.dest===place&&p.kind==="out"),bk=prices.find(p=>p.dest===place&&p.kind==="back");
+  if(rt)known.push(`${T.rt}: <b>${money(rt.price)}</b> · ${datesOf(rt)}`);
+  if(ou)known.push(`Montréal → ${esc(nameOf(place))}: <b>${money(ou.price)}</b> · ${fmtDate(ou.depart)}`);
+  if(bk)known.push(`${esc(nameOf(place))} → Montréal: <b>${money(bk.price)}</b> · ${fmtDate(bk.depart)}`);
+  const dd=new Date(d+"T12:00:00");
+  const near=(D.oneways||[]).filter(o=>o.c===place&&((dir==="back"&&o.k==="back")||(dir!=="back"&&o.k==="out"))&&Math.abs((new Date(o.d+"T12:00:00")-dd)/864e5)<=14).sort((x,y)=>x.p-y.p).slice(0,3);
+  if(near.length)known.push(`${T.near}: `+near.map(o=>`<b>${money(o.p)}</b> ${fmtDate(o.d)}`).join(" · "));
+  const reg=regionsOfCode(place);
+  const list=SITES.filter(x=>(!payOnly||x.pay)&&(!x.regions||!reg||!reg.length||x.regions.some(rg=>reg.includes(rg))));
+  $("pOut").innerHTML=`<div style="display:flex;flex-direction:column;gap:14px">
+    <div class="known"><b class="h">${T.knownH}</b>${known.length?known.map(k=>`<span>${k}</span>`).join(""):`<span>${T.knownNone}</span>`}</div>
+    <div class="section-h"><h2>${T.sitesH}</h2><span class="label">${T.sitesN(list.length)}</span></div>
+    <div class="sites">${list.map(x=>`<div class="site"><b>${esc(x.n)}</b><span class="btnwrap"></span>
+      <span class="kind">${T[x.k]} · ${PREFILLED.has(x.n)?T.prefill:T.home}</span>
+      <span class="pl ${x.pay?"yes":""}">${x.pay?"✓ "+esc(x.pay):T.noPay}</span>
+      <a class="btn ${x.pay&&payOnly?"primary":""}" href="${esc(x.url(s))}" target="_blank" rel="noopener">${T.open}</a></div>`).join("")}</div>
+    ${list.some(x=>x.pay)?`<p class="note">${T.payNote}</p>`:""}</div>`;
+}
+$("pform").addEventListener("submit",planSearch);
+$("pSwap").onclick=()=>{const a=$("pFrom").value;$("pFrom").value=$("pTo").value||"";$("pTo").value=a};
+try{const p=JSON.parse(store.get("yulradar.plan")||"null");if(p){$("pFrom").value=p.from||"Montréal (YUL)";$("pTo").value=p.to||"";$("pDep").value=p.d||"";$("pRet").value=p.r||"";$("pAd").value=String(p.a||1);$("pCab").value=p.c||"e";$("pPay").checked=!!p.payOnly;if(p.to&&p.d)planSearch()}}catch(e){}
+showView();
 
 function render(){
   const isCombo=kind==="combo";

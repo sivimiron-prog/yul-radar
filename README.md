@@ -108,6 +108,8 @@ The Radar icon then opens the page full screen, like an app. It shows the finds 
 
 **Trip combos.** The **Trip combos** view pairs a one-way flight out of Montréal with a one-way flight back, from the same or a different city, and ranks the pairs by total price. Pick how long you'll be away (1–2 weeks up to 2–4 months) and a region such as Europe or Asia. These are two separate tickets, so if the first flight is late, the second one isn't protected.
 
+**Plan a trip.** Tap **Plan a trip** at the top, enter where you're going, your dates, the number of adults and the cabin, and tap **Compare prices**. The page shows what the Radar has already seen for that destination, then a list of sites with your search filled in (Google Flights, KAYAK, Skyscanner, momondo, Expedia, Aviasales) and links to the airlines' booking pages. Tick **Only sites where you can pay later** to keep the ones that offer monthly payments for flights: KAYAK and FlightHub (Affirm), Alternative Airlines, and Air Canada, Air Transat, WestJet, Porter and Flair (Flex Pay). Pay-later plans need credit approval and can carry interest, so compare the total cost first.
+
 Telegram alerts still arrive as notifications, and the page is where you go to look at all the finds together.
 
 ## How detection works

@@ -502,7 +502,11 @@ def build_site(c, scanned, n_dest, sample, now):
         n_city[month] = n_city.get(month, 0) + 1
         oneways.append({"k": kind, "c": place, "n": city_name(place), "d": depart, "p": price, "s": stops,
                         "a": airline, "r": regions_of(place)})
-    data = {"generated": now, "prices": prices, "oneways": oneways, "repo": env("GITHUB_REPOSITORY"), "sample": sample, "origin": ORIGIN, "lang": LANG, "currency": CURRENCY.upper(),
+    names = {p["dest"]: p["city"] for p in prices}
+    names.update({o["c"]: o["n"] for o in oneways})
+    for code in watch_airports():
+        names.setdefault(code, city_name(code))
+    data = {"generated": now, "prices": prices, "oneways": oneways, "cities": names, "repo": env("GITHUB_REPOSITORY"), "sample": sample, "origin": ORIGIN, "lang": LANG, "currency": CURRENCY.upper(),
             "deal_pct": round(DEAL_DROP * 100), "error_pct": round(ERROR_DROP * 100),
             "fares": scanned, "destinations": n_dest, "finds": finds, "history": history}
     tpl = (HERE / "site_template.html").read_text(encoding="utf-8")
